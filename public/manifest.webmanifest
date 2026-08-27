@@ -1,0 +1,18 @@
+{
+  "name": "Автоосмотр — калькулятор",
+  "short_name": "Автоосмотр",
+  "description": "Оценка подержанного автомобиля прямо во время осмотра",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f7fb",
+  "theme_color": "#101b2d",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
