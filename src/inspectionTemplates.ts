@@ -1,38 +1,222 @@
 import type { InspectionLayout, InspectionTemplate, ModelId } from './types';
 
 export const CLASSIC_INSPECTION_LAYOUT: InspectionLayout = [
-  { id: 'body', label: 'Кузов', description: 'Элементы, коррозия, геометрия и следы ремонта.', categories: ['body'], blocks: [
-    { id: 'body-panels', label: 'Внешние элементы', category: 'body', subcategory: 'Локальный ремонт', elements: ['Передний бампер', 'Капот', 'Левое переднее крыло', 'Правое переднее крыло', 'Левая передняя дверь', 'Правая передняя дверь', 'Левая задняя дверь', 'Правая задняя дверь', 'Крыша', 'Крышка багажника', 'Задний бампер'] },
-    { id: 'body-structure', label: 'Структура и низ', category: 'body', subcategory: 'Геометрия', elements: ['Левый порог', 'Правый порог', 'Днище', 'Лонжероны', 'Стаканы', 'Крепления подвески', 'Геометрия кузова'] },
-  ] },
-  { id: 'interior', label: 'Салон', description: 'Состояние салона, комплектация и комфорт.', categories: ['interior'], blocks: [
-    { id: 'interior-trim', label: 'Отделка', category: 'interior', subcategory: 'Обивка', elements: ['Сиденья', 'Потолок', 'Дверные карты', 'Торпедо и пластик', 'Ковры и обивка пола', 'Багажник'] },
-    { id: 'interior-equipment', label: 'Оборудование', category: 'interior', subcategory: 'Пластик', elements: ['Ремни безопасности', 'Подушки безопасности', 'Стеклоподъёмники', 'Центральный замок', 'Приборная панель'] },
-  ] },
-  { id: 'engine', label: 'Двигатель', description: 'Запуск, работа, течи и обслуживание двигателя.', categories: ['engine'], blocks: [
-    { id: 'engine-operation', label: 'Работа двигателя', category: 'engine', subcategory: 'Диагностика', elements: ['Холодный запуск', 'Холостой ход', 'Разгон и тяга', 'Посторонние звуки', 'Дым из выхлопа', 'Течи масла'] },
-    { id: 'engine-maintenance', label: 'Регламент', category: 'engine', subcategory: 'Мелкий ремонт', elements: ['Ремень ГРМ и ролики', 'Свечи и катушки', 'Навесное оборудование', 'Компрессия'] },
-  ] },
-  { id: 'transmission', label: 'АКПП', description: 'Переключения, пробуксовки, удары и течи.', categories: ['transmission'], blocks: [
-    { id: 'transmission-check', label: 'Проверка в движении', category: 'transmission', subcategory: 'Диагностика', elements: ['Включение D и R', 'Переключения', 'Пробуксовка', 'Удары и задержки', 'Кикдаун', 'Течи и состояние масла'] },
-  ] },
-  { id: 'runningGear', label: 'Ходовая', description: 'Подвеска, тормоза и рулевое управление.', categories: ['suspension', 'brakes', 'steering'], blocks: [
-    { id: 'running-suspension', label: 'Подвеска', category: 'suspension', subcategory: 'Передняя', elements: ['Передняя подвеска', 'Задняя подвеска', 'Амортизаторы', 'Пружины', 'Ступичные подшипники'] },
-    { id: 'running-brakes', label: 'Тормоза', category: 'brakes', subcategory: 'Диски и колодки', elements: ['Передние диски и колодки', 'Задние диски и колодки', 'Суппорты', 'Тормозные трубки'] },
-    { id: 'running-steering', label: 'Рулевое', category: 'steering', subcategory: 'Тяги и наконечники', elements: ['Рулевая рейка', 'Тяги и наконечники', 'ГУР'] },
-  ] },
-  { id: 'electrics', label: 'Электрика и климат', description: 'Запуск, зарядка, свет, комфорт и кондиционер.', categories: ['electrics', 'ac'], blocks: [
-    { id: 'electrics-main', label: 'Электрика', category: 'electrics', subcategory: 'Диагностика', elements: ['Аккумулятор', 'Генератор', 'Стартер', 'Освещение', 'Ошибки на панели', 'Проводка'] },
-    { id: 'electrics-comfort', label: 'Комфорт и климат', category: 'ac', subcategory: 'Диагностика', elements: ['Кондиционер', 'Печка', 'Вентилятор', 'Обогревы и зеркала'] },
-  ] },
-  { id: 'service', label: 'ТО и жидкости', description: 'Расходники, охлаждение и обязательное обслуживание.', categories: ['maintenance', 'cooling'], blocks: [
-    { id: 'service-fluids', label: 'Жидкости и регламент', category: 'maintenance', subcategory: 'Масла и фильтры', elements: ['Масло двигателя', 'Фильтры', 'Антифриз', 'Тормозная жидкость', 'Масло АКПП'] },
-    { id: 'service-cooling', label: 'Охлаждение', category: 'cooling', subcategory: 'Радиатор', elements: ['Радиатор', 'Патрубки', 'Термостат', 'Помпа'] },
-  ] },
-  { id: 'wheels', label: 'Колёса и выхлоп', description: 'Резина, диски и выхлопная система.', categories: ['tires', 'exhaust', 'other'], blocks: [
-    { id: 'wheels-tires', label: 'Колёса', category: 'tires', subcategory: 'Летняя', elements: ['Летняя резина', 'Зимняя резина', 'Диски', 'Запасное колесо'] },
-    { id: 'wheels-exhaust', label: 'Выхлоп и прочее', category: 'exhaust', subcategory: 'Глушитель', elements: ['Глушитель', 'Катализатор', 'Крепления выхлопа', 'Прочие замечания'] },
-  ] },
+  {
+    id: 'body',
+    label: 'Кузов',
+    description: 'Элементы, коррозия, геометрия и следы ремонта.',
+    categories: ['body'],
+    blocks: [
+      {
+        id: 'body-panels',
+        label: 'Внешние элементы',
+        category: 'body',
+        subcategory: 'Локальный ремонт',
+        elements: [
+          'Передний бампер',
+          'Капот',
+          'Левое переднее крыло',
+          'Правое переднее крыло',
+          'Левая передняя дверь',
+          'Правая передняя дверь',
+          'Левая задняя дверь',
+          'Правая задняя дверь',
+          'Крыша',
+          'Крышка багажника',
+          'Задний бампер',
+        ],
+      },
+      {
+        id: 'body-structure',
+        label: 'Структура и низ',
+        category: 'body',
+        subcategory: 'Геометрия',
+        elements: [
+          'Левый порог',
+          'Правый порог',
+          'Днище',
+          'Лонжероны',
+          'Стаканы',
+          'Крепления подвески',
+          'Геометрия кузова',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'interior',
+    label: 'Салон',
+    description: 'Состояние салона, комплектация и комфорт.',
+    categories: ['interior'],
+    blocks: [
+      {
+        id: 'interior-trim',
+        label: 'Отделка',
+        category: 'interior',
+        subcategory: 'Обивка',
+        elements: ['Сиденья', 'Потолок', 'Дверные карты', 'Торпедо и пластик', 'Ковры и обивка пола', 'Багажник'],
+      },
+      {
+        id: 'interior-equipment',
+        label: 'Оборудование',
+        category: 'interior',
+        subcategory: 'Пластик',
+        elements: [
+          'Ремни безопасности',
+          'Подушки безопасности',
+          'Стеклоподъёмники',
+          'Центральный замок',
+          'Приборная панель',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'engine',
+    label: 'Двигатель',
+    description: 'Запуск, работа, течи и обслуживание двигателя.',
+    categories: ['engine'],
+    blocks: [
+      {
+        id: 'engine-operation',
+        label: 'Работа двигателя',
+        category: 'engine',
+        subcategory: 'Диагностика',
+        elements: [
+          'Холодный запуск',
+          'Холостой ход',
+          'Разгон и тяга',
+          'Посторонние звуки',
+          'Дым из выхлопа',
+          'Течи масла',
+        ],
+      },
+      {
+        id: 'engine-maintenance',
+        label: 'Регламент',
+        category: 'engine',
+        subcategory: 'Мелкий ремонт',
+        elements: ['Ремень ГРМ и ролики', 'Свечи и катушки', 'Навесное оборудование', 'Компрессия'],
+      },
+    ],
+  },
+  {
+    id: 'transmission',
+    label: 'АКПП',
+    description: 'Переключения, пробуксовки, удары и течи.',
+    categories: ['transmission'],
+    blocks: [
+      {
+        id: 'transmission-check',
+        label: 'Проверка в движении',
+        category: 'transmission',
+        subcategory: 'Диагностика',
+        elements: [
+          'Включение D и R',
+          'Переключения',
+          'Пробуксовка',
+          'Удары и задержки',
+          'Кикдаун',
+          'Течи и состояние масла',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'runningGear',
+    label: 'Ходовая',
+    description: 'Подвеска, тормоза и рулевое управление.',
+    categories: ['suspension', 'brakes', 'steering'],
+    blocks: [
+      {
+        id: 'running-suspension',
+        label: 'Подвеска',
+        category: 'suspension',
+        subcategory: 'Передняя',
+        elements: ['Передняя подвеска', 'Задняя подвеска', 'Амортизаторы', 'Пружины', 'Ступичные подшипники'],
+      },
+      {
+        id: 'running-brakes',
+        label: 'Тормоза',
+        category: 'brakes',
+        subcategory: 'Диски и колодки',
+        elements: ['Передние диски и колодки', 'Задние диски и колодки', 'Суппорты', 'Тормозные трубки'],
+      },
+      {
+        id: 'running-steering',
+        label: 'Рулевое',
+        category: 'steering',
+        subcategory: 'Тяги и наконечники',
+        elements: ['Рулевая рейка', 'Тяги и наконечники', 'ГУР'],
+      },
+    ],
+  },
+  {
+    id: 'electrics',
+    label: 'Электрика и климат',
+    description: 'Запуск, зарядка, свет, комфорт и кондиционер.',
+    categories: ['electrics', 'ac'],
+    blocks: [
+      {
+        id: 'electrics-main',
+        label: 'Электрика',
+        category: 'electrics',
+        subcategory: 'Диагностика',
+        elements: ['Аккумулятор', 'Генератор', 'Стартер', 'Освещение', 'Ошибки на панели', 'Проводка'],
+      },
+      {
+        id: 'electrics-comfort',
+        label: 'Комфорт и климат',
+        category: 'ac',
+        subcategory: 'Диагностика',
+        elements: ['Кондиционер', 'Печка', 'Вентилятор', 'Обогревы и зеркала'],
+      },
+    ],
+  },
+  {
+    id: 'service',
+    label: 'ТО и жидкости',
+    description: 'Расходники, охлаждение и обязательное обслуживание.',
+    categories: ['maintenance', 'cooling'],
+    blocks: [
+      {
+        id: 'service-fluids',
+        label: 'Жидкости и регламент',
+        category: 'maintenance',
+        subcategory: 'Масла и фильтры',
+        elements: ['Масло двигателя', 'Фильтры', 'Антифриз', 'Тормозная жидкость', 'Масло АКПП'],
+      },
+      {
+        id: 'service-cooling',
+        label: 'Охлаждение',
+        category: 'cooling',
+        subcategory: 'Радиатор',
+        elements: ['Радиатор', 'Патрубки', 'Термостат', 'Помпа'],
+      },
+    ],
+  },
+  {
+    id: 'wheels',
+    label: 'Колёса и выхлоп',
+    description: 'Резина, диски и выхлопная система.',
+    categories: ['tires', 'exhaust', 'other'],
+    blocks: [
+      {
+        id: 'wheels-tires',
+        label: 'Колёса',
+        category: 'tires',
+        subcategory: 'Летняя',
+        elements: ['Летняя резина', 'Зимняя резина', 'Диски', 'Запасное колесо'],
+      },
+      {
+        id: 'wheels-exhaust',
+        label: 'Выхлоп и прочее',
+        category: 'exhaust',
+        subcategory: 'Глушитель',
+        elements: ['Глушитель', 'Катализатор', 'Крепления выхлопа', 'Прочие замечания'],
+      },
+    ],
+  },
 ];
 
 const ALL_MODELS: ModelId[] = ['corolla-e120', 'cerato-ld', 'lacetti-hatch'];
@@ -94,13 +278,21 @@ export const DEFAULT_INSPECTION_TEMPLATES: InspectionTemplate[] = [
     name: 'Расширенный салон · все модели',
     description: 'Классический шаблон с дополнительной проверкой комплектации и комфорта.',
     modelIds: ALL_MODELS,
-    layout: CLASSIC_INSPECTION_LAYOUT.map((stage) => stage.id !== 'interior' ? stage : ({
-      ...stage,
-      blocks: stage.blocks.map((block) => block.id !== 'interior-equipment' ? block : ({
-        ...block,
-        elements: [...block.elements, 'Круиз-контроль / доп. функции', 'Штатная мультимедиа'],
-      })),
-    })),
+    layout: CLASSIC_INSPECTION_LAYOUT.map((stage) =>
+      stage.id !== 'interior'
+        ? stage
+        : {
+            ...stage,
+            blocks: stage.blocks.map((block) =>
+              block.id !== 'interior-equipment'
+                ? block
+                : {
+                    ...block,
+                    elements: [...block.elements, 'Круиз-контроль / доп. функции', 'Штатная мультимедиа'],
+                  },
+            ),
+          },
+    ),
     isBuiltIn: true,
   },
 ];

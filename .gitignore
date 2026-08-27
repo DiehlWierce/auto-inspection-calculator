@@ -2,3 +2,8 @@ node_modules/
 dist/
 .env
 .DS_Store
+
+# Артефакты сборки и пакетного менеджера — не место в репозитории
+*.tsbuildinfo
+.pnpm-store/
+coverage/
