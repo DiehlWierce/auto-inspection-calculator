@@ -7,5 +7,5 @@ export default defineConfig({
     host: '127.0.0.1',
     port: 5173,
   },
-  base: '/determinate_calc/',
+  base: '/auto-inspection-calculator/',
 });
