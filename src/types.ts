@@ -47,7 +47,6 @@ export interface ModelProfile {
   engineVariants: EngineVariant[];
   consumptionLPer100Km: number;
   taxAnnual: number;
-  repairEventIds: string[];
 }
 
 export interface EngineVariant {
@@ -331,7 +330,12 @@ export interface CalculationResult {
   fullReserveRatio: number | null;
   zone: 'GREEN' | 'YELLOW' | 'RED' | 'FILTER_FAIL';
   calculatedFacts: CalculatedFact[];
+  /** Все отмеченные кузовные риски. */
+  bodyRisks: BodyRisk[];
+  /** Риски силовой структуры и геометрии — останавливают расчёт. */
   criticalBodyRisks: BodyRisk[];
+  /** Кузовные риски, которые считаются оцениваемой работой — только предупреждение. */
+  otherBodyRisks: BodyRisk[];
   unknownCostCount: number;
   questionFactsCount: number;
   confirmedFactsCount: number;

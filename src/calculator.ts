@@ -15,20 +15,50 @@ import type {
   YearForecast,
 } from './types';
 
+/**
+ * Штрафы компонента рейтинга «История и комплектность», шкала 0–100.
+ * Шкала развёрнута намеренно: при весе компонента 5 из 105 полный набор
+ * штрафов снимает с итогового рейтинга около 3 баллов — заметно, но не решающе.
+ */
 export const VEHICLE_INFO_PENALTIES = {
-  accident: 4,
-  unknownAccident: 1,
-  duplicateWithOriginal: 1,
-  duplicateWithoutOriginal: 3,
-  fewerThanTwoKeys: 1,
+  accident: 35,
+  unknownAccident: 10,
+  duplicateWithOriginal: 10,
+  duplicateWithoutOriginal: 30,
+  fewerThanTwoKeys: 10,
 } as const;
+
+/**
+ * Риски, которые нельзя закрыть денежной сметой: силовая структура и геометрия.
+ * Каждый из них останавливает расчёт (hard block).
+ * `weak_sills` сюда намеренно не входит: отдельный порог — оцениваемая работа,
+ * он даёт предупреждение, а не блокировку.
+ */
+export const CRITICAL_BODY_RISKS: readonly BodyRisk[] = [
+  'structural_corrosion',
+  'longerons',
+  'strut_towers',
+  'floor',
+  'suspension_mounts',
+  'geometry',
+  'major_crash',
+  'large_welding',
+  'unestimable_scope',
+];
+
+/** Заявленная стоимость работы не может быть отрицательной. */
+function statedCostOf(fact: Fact): number {
+  return fact.statedCost === undefined ? 0 : Math.max(0, fact.statedCost);
+}
 
 function vehicleInfoScore(vehicle: VehicleInfo): number {
   let penalty = 0;
   if (vehicle.accidentStatus === 'YES') penalty += VEHICLE_INFO_PENALTIES.accident;
-  if (vehicle.accidentStatus === 'UNKNOWN' || vehicle.accidentStatus === undefined) penalty += VEHICLE_INFO_PENALTIES.unknownAccident;
+  if (vehicle.accidentStatus === 'UNKNOWN' || vehicle.accidentStatus === undefined)
+    penalty += VEHICLE_INFO_PENALTIES.unknownAccident;
   if (vehicle.documentsStatus === 'DUPLICATE_WITH_ORIGINAL') penalty += VEHICLE_INFO_PENALTIES.duplicateWithOriginal;
-  if (vehicle.documentsStatus === 'DUPLICATE_WITHOUT_ORIGINAL') penalty += VEHICLE_INFO_PENALTIES.duplicateWithoutOriginal;
+  if (vehicle.documentsStatus === 'DUPLICATE_WITHOUT_ORIGINAL')
+    penalty += VEHICLE_INFO_PENALTIES.duplicateWithoutOriginal;
   if (vehicle.keyCount !== undefined && vehicle.keyCount < 2) penalty += VEHICLE_INFO_PENALTIES.fewerThanTwoKeys;
   return clamp(100 - penalty, 0, 100);
 }
@@ -60,9 +90,11 @@ function coefficientFor(fact: Fact, config: AppConfig): number {
     else id = 'body-local';
   }
 
-  return config.coefficients.find((item) => item.id === id)?.coefficient
-    ?? config.coefficients.find((item) => item.category === fact.category)?.coefficient
-    ?? 1.2;
+  return (
+    config.coefficients.find((item) => item.id === id)?.coefficient ??
+    config.coefficients.find((item) => item.category === fact.category)?.coefficient ??
+    1.2
+  );
 }
 
 function priceFor(inspection: Inspection): { price: number; source: 'ACTUAL' | 'ASKING_MINUS_DISCOUNT' } {
@@ -93,7 +125,8 @@ function effectiveEvent(event: RepairEvent, inspection: Inspection): RepairEvent
     repairCost: Math.max(0, override?.repairCost ?? event.repairCost),
     coefficient: Math.max(0, override?.coefficient ?? event.coefficient),
     maxCost: Math.max(0, override?.maxCost ?? event.maxCost),
-    monthStart: mode === 'SCHEDULED' ? scheduledMonth : Math.max(1, Math.round(override?.monthStart ?? event.monthStart)),
+    monthStart:
+      mode === 'SCHEDULED' ? scheduledMonth : Math.max(1, Math.round(override?.monthStart ?? event.monthStart)),
     monthEnd: mode === 'SCHEDULED' ? scheduledMonth : Math.max(1, Math.round(override?.monthEnd ?? event.monthEnd)),
     enabled: override?.enabled !== false,
   };
@@ -104,6 +137,29 @@ function eventDueMonth(event: RepairEvent, totalMonths: number): number {
   const start = clamp(Math.round(event.monthStart), 1, totalMonths);
   const end = clamp(Math.max(start, Math.round(event.monthEnd)), start, totalMonths);
   return Math.round((start + end) / 2);
+}
+
+/**
+ * Ключ симуляции. В него входят только те параметры события, которые влияют на исход.
+ * Название, категория и прочий текст сюда не попадают: переименование события
+ * в настройках не должно менять рассчитанные вероятности.
+ */
+function simulationKey(events: Array<RepairEvent & { enabled: boolean }>): string {
+  return events
+    .map((event) =>
+      [
+        event.id,
+        event.enabled ? 1 : 0,
+        event.mode ?? 'RISK',
+        event.probability5y,
+        event.repairCost,
+        event.coefficient,
+        event.maxCost,
+        event.monthStart,
+        event.monthEnd,
+      ].join('|'),
+    )
+    .join(';');
 }
 
 function hashSeed(text: string): number {
@@ -118,7 +174,7 @@ function hashSeed(text: string): number {
 function mulberry32(seed: number): () => number {
   let value = seed >>> 0;
   return () => {
-    value += 0x6D2B79F5;
+    value += 0x6d2b79f5;
     let t = value;
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
@@ -126,14 +182,37 @@ function mulberry32(seed: number): () => number {
   };
 }
 
+/**
+ * Горизонт прогноза в годах. Значение из конфигурации может прийти испорченным
+ * (например, из чужого файла бэкапа), поэтому оно приводится к разумному диапазону:
+ * иначе деления на ноль превращают весь прогноз и рейтинг в NaN.
+ */
+export const MIN_FORECAST_YEARS = 1;
+export const MAX_FORECAST_YEARS = 15;
+
+function forecastYears(config: AppConfig): number {
+  const raw = Math.round(config.scenario.years);
+  if (!Number.isFinite(raw)) return MIN_FORECAST_YEARS;
+  return clamp(raw, MIN_FORECAST_YEARS, MAX_FORECAST_YEARS);
+}
+
 function scenarioIsComplete(config: AppConfig): boolean {
   const { scenario } = config;
-  const arrays = [scenario.insuranceByYear, scenario.serviceByYear, scenario.fluidsByYear,
-    scenario.consumablesByYear, scenario.tiresByYear, scenario.washingByYear, scenario.finesByYear];
-  return scenario.years > 0
-    && Number.isFinite(scenario.annualKm)
-    && Number.isFinite(scenario.fuelPrice)
-    && arrays.every((array) => array.length >= scenario.years && array.slice(0, scenario.years).every(Number.isFinite));
+  const arrays = [
+    scenario.insuranceByYear,
+    scenario.serviceByYear,
+    scenario.fluidsByYear,
+    scenario.consumablesByYear,
+    scenario.tiresByYear,
+    scenario.washingByYear,
+    scenario.finesByYear,
+  ];
+  return (
+    scenario.years > 0 &&
+    Number.isFinite(scenario.annualKm) &&
+    Number.isFinite(scenario.fuelPrice) &&
+    arrays.every((array) => array.length >= scenario.years && array.slice(0, scenario.years).every(Number.isFinite))
+  );
 }
 
 function simulateRisks(
@@ -151,9 +230,9 @@ function simulateRisks(
   closeMajor: number;
   critical: number;
 } {
-  const years = config.scenario.years;
-  const scenarios = Math.max(1, Math.round(config.simulationScenarios));
-  const random = mulberry32(hashSeed(`${config.simulationSeed}:${modelId}:${JSON.stringify(events)}`));
+  const years = forecastYears(config);
+  const scenarios = clamp(Math.round(config.simulationScenarios), 1, 100000);
+  const random = mulberry32(hashSeed(`${config.simulationSeed}:${modelId}:${simulationKey(events)}`));
   const limitByYear = Array.from({ length: years }, () => 0);
   const majorByYear = Array.from({ length: years }, () => 0);
   const majorPresenceByYear = Array.from({ length: years }, () => 0);
@@ -198,7 +277,9 @@ function simulateRisks(
       if (majorCounts[year] > 0) majorPresenceByYear[year] += 1;
     }
     majorMonths.sort((left, right) => left - right);
-    const close = majorMonths.some((month, index) => index > 0 && month - majorMonths[index - 1] < config.minMonthsBetweenMajorRepairs);
+    const close = majorMonths.some(
+      (month, index) => index > 0 && month - majorMonths[index - 1] < config.minMonthsBetweenMajorRepairs,
+    );
     if (close) closeMajor += 1;
     if (scenarioLimit) anyLimit += 1;
     if (scenarioMajor) anyMajor += 1;
@@ -225,10 +306,16 @@ function deferredMonth(urgency: Fact['urgency']): number | null {
   return null;
 }
 
-function calculateForecast(inspection: Inspection, config: AppConfig, immediateSafeRestoreCost: number, fullUncertaintyPremium: number): ForecastResult {
+function calculateForecast(
+  inspection: Inspection,
+  config: AppConfig,
+  calculationPrice: number,
+  immediateSafeRestoreCost: number,
+  fullUncertaintyPremium: number,
+): ForecastResult {
   const model = config.models.find((item) => item.id === inspection.vehicle.modelId) ?? config.models[0];
   const scenario = config.scenario;
-  const years = scenario.years;
+  const years = forecastYears(config);
   const events = [...config.repairEvents, ...(inspection.customEvents ?? [])]
     .filter((event) => event.modelIds.includes(model.id) && inspection.eventOverrides?.[event.id]?.removed !== true)
     .map((event) => effectiveEvent(event, inspection));
@@ -247,24 +334,29 @@ function calculateForecast(inspection: Inspection, config: AppConfig, immediateS
     const month = deferredMonth(fact.urgency);
     if (month === null) continue;
     const coefficient = coefficientFor(fact, config);
-    deferredByMonth[Math.min(totalMonths - 1, month - 1)] += roundCurrency(fact.statedCost * coefficient);
+    deferredByMonth[Math.min(totalMonths - 1, month - 1)] += roundCurrency(statedCostOf(fact) * coefficient);
   }
 
-  const deferredByYear = Array.from({ length: years }, (_, yearIndex) => deferredByMonth.slice(yearIndex * 12, yearIndex * 12 + 12).reduce((sum, value) => sum + value, 0));
-  const deferredSafeRestoreCost = deferredByMonth.reduce((sum, value) => sum + value, 0);
+  const deferredByYear = Array.from({ length: years }, (_, yearIndex) =>
+    deferredByMonth.slice(yearIndex * 12, yearIndex * 12 + 12).reduce((sum, value) => sum + value, 0),
+  );
 
   const dueMonthByEvent = new Map(events.map((event) => [event.id, eventDueMonth(event, totalMonths)]));
 
   const baseline = Array.from({ length: years }, (_, yearIndex) => {
-    const fuel = scenario.annualKm * model.consumptionLPer100Km / 100 * scenario.fuelPrice;
-    return fuel + valueAt(scenario.insuranceByYear, yearIndex) + model.taxAnnual
-      + valueAt(scenario.serviceByYear, yearIndex)
-      + valueAt(scenario.fluidsByYear, yearIndex)
-      + valueAt(scenario.consumablesByYear, yearIndex)
-      + valueAt(scenario.tiresByYear, yearIndex)
-      + valueAt(scenario.washingByYear, yearIndex)
-      + valueAt(scenario.finesByYear, yearIndex)
-      + deferredByYear[yearIndex];
+    const fuel = ((scenario.annualKm * model.consumptionLPer100Km) / 100) * scenario.fuelPrice;
+    return (
+      fuel +
+      valueAt(scenario.insuranceByYear, yearIndex) +
+      model.taxAnnual +
+      valueAt(scenario.serviceByYear, yearIndex) +
+      valueAt(scenario.fluidsByYear, yearIndex) +
+      valueAt(scenario.consumablesByYear, yearIndex) +
+      valueAt(scenario.tiresByYear, yearIndex) +
+      valueAt(scenario.washingByYear, yearIndex) +
+      valueAt(scenario.finesByYear, yearIndex) +
+      deferredByYear[yearIndex]
+    );
   });
 
   const expectedRepairsByYear = Array.from({ length: years }, () => 0);
@@ -274,11 +366,10 @@ function calculateForecast(inspection: Inspection, config: AppConfig, immediateS
     const yearIndex = Math.floor((dueMonth - 1) / 12);
     expectedRepairsByYear[yearIndex] += event.probability5y * event.repairCost * event.coefficient;
   }
-  const expectedEventCost5y = events.reduce((sum, event) => sum + (event.enabled ? event.probability5y * event.repairCost * event.coefficient : 0), 0);
   let reserveBalance = 0;
   const months = Array.from({ length: totalMonths }, (_, monthIndex) => {
     const yearIndex = Math.floor(monthIndex / 12);
-    const fuel = scenario.annualKm * model.consumptionLPer100Km / 100 * scenario.fuelPrice / 12;
+    const fuel = (((scenario.annualKm * model.consumptionLPer100Km) / 100) * scenario.fuelPrice) / 12;
     const insurance = valueAt(scenario.insuranceByYear, yearIndex) / 12;
     const tax = model.taxAnnual / 12;
     const service = valueAt(scenario.serviceByYear, yearIndex) / 12;
@@ -288,14 +379,29 @@ function calculateForecast(inspection: Inspection, config: AppConfig, immediateS
     const washing = valueAt(scenario.washingByYear, yearIndex) / 12;
     const fines = valueAt(scenario.finesByYear, yearIndex) / 12;
     const month = monthIndex + 1;
-    const scheduledEvents = events.reduce((sum, event) => sum + (event.enabled && event.mode === 'SCHEDULED' && (dueMonthByEvent.get(event.id) ?? 1) === month ? event.repairCost * event.coefficient : 0), 0);
-    const expectedRepairs = events.reduce((sum, event) => sum + (event.enabled && event.mode !== 'SCHEDULED' && (dueMonthByEvent.get(event.id) ?? 1) === month
-      ? event.probability5y * event.repairCost * event.coefficient
-      : 0), 0);
+    const scheduledEvents = events.reduce(
+      (sum, event) =>
+        sum +
+        (event.enabled && event.mode === 'SCHEDULED' && (dueMonthByEvent.get(event.id) ?? 1) === month
+          ? event.repairCost * event.coefficient
+          : 0),
+      0,
+    );
+    const expectedRepairs = events.reduce(
+      (sum, event) =>
+        sum +
+        (event.enabled && event.mode !== 'SCHEDULED' && (dueMonthByEvent.get(event.id) ?? 1) === month
+          ? event.probability5y * event.repairCost * event.coefficient
+          : 0),
+      0,
+    );
     const deferredFacts = deferredByMonth[monthIndex];
     const regularExpenses = fuel + insurance + tax + service + fluids + consumables + tires + washing + fines;
     const repairOutflow = deferredFacts + scheduledEvents + expectedRepairs;
-    const deferredReserve = deferredByMonth.reduce((sum, value, index) => sum + (index < monthIndex || value === 0 ? 0 : value / (index + 1)), 0);
+    const deferredReserve = deferredByMonth.reduce(
+      (sum, value, index) => sum + (index < monthIndex || value === 0 ? 0 : value / (index + 1)),
+      0,
+    );
     const eventReserve = events.reduce((sum, event) => {
       if (!event.enabled) return sum;
       const dueMonth = dueMonthByEvent.get(event.id) ?? 1;
@@ -334,7 +440,7 @@ function calculateForecast(inspection: Inspection, config: AppConfig, immediateS
   }, 0);
   const simulated = simulateRisks(events, config, model.id, baseline);
   const yearsResult: YearForecast[] = Array.from({ length: years }, (_, yearIndex) => {
-    const fuel = scenario.annualKm * model.consumptionLPer100Km / 100 * scenario.fuelPrice;
+    const fuel = ((scenario.annualKm * model.consumptionLPer100Km) / 100) * scenario.fuelPrice;
     const insurance = valueAt(scenario.insuranceByYear, yearIndex);
     const service = valueAt(scenario.serviceByYear, yearIndex);
     const fluids = valueAt(scenario.fluidsByYear, yearIndex);
@@ -363,17 +469,20 @@ function calculateForecast(inspection: Inspection, config: AppConfig, immediateS
     };
   });
   const totalCost = yearsResult.reduce((sum, year) => sum + year.expectedTotal, 0);
-  const expectedUncertainty = events.reduce((sum, event) => sum + (event.enabled
-    ? event.probability5y * event.repairCost * Math.max(0, event.coefficient - 1)
-    : 0), 0);
+  const expectedUncertainty = events.reduce(
+    (sum, event) =>
+      sum + (event.enabled ? event.probability5y * event.repairCost * Math.max(0, event.coefficient - 1) : 0),
+    0,
+  );
   const complete = scenarioIsComplete(config);
+  const fullCost = calculationPrice + immediateSafeRestoreCost + totalCost;
 
   return {
     years: yearsResult,
     totalCost,
     averageMonthlyCost: totalCost / (years * 12),
-    fullFiveYearCost: (inspection.pricing.actualPurchasePrice ?? Math.max(0, inspection.pricing.askingPrice - inspection.pricing.expectedDiscount)) + immediateSafeRestoreCost + totalCost,
-    fullAverageMonthlyCost: ((inspection.pricing.actualPurchasePrice ?? Math.max(0, inspection.pricing.askingPrice - inspection.pricing.expectedDiscount)) + immediateSafeRestoreCost + totalCost) / (years * 12),
+    fullFiveYearCost: fullCost,
+    fullAverageMonthlyCost: fullCost / (years * 12),
     expectedMajorRepairs5y,
     expectedMajorRepairsPerYear: expectedMajorRepairs5y / years,
     probabilityAnyLimitViolation: simulated.anyLimit,
@@ -381,58 +490,91 @@ function calculateForecast(inspection: Inspection, config: AppConfig, immediateS
     probabilityAnyMajorRepair: simulated.anyMajorRepair,
     probabilityCloseMajorRepairs: simulated.closeMajor,
     probabilityCriticalRepair: simulated.critical,
-    probabilityEngineEvent: 1 - events.filter((event) => event.enabled && event.category === 'engine').reduce((product, event) => product * (1 - event.probability5y), 1),
-    probabilityTransmissionEvent: 1 - events.filter((event) => event.enabled && event.category === 'transmission').reduce((product, event) => product * (1 - event.probability5y), 1),
+    probabilityEngineEvent:
+      1 -
+      events
+        .filter((event) => event.enabled && event.category === 'engine')
+        .reduce((product, event) => product * (1 - event.probability5y), 1),
+    probabilityTransmissionEvent:
+      1 -
+      events
+        .filter((event) => event.enabled && event.category === 'transmission')
+        .reduce((product, event) => product * (1 - event.probability5y), 1),
     uncertaintyLoad: fullUncertaintyPremium + expectedUncertainty,
     eventRows,
     months,
     questionFactsCount: inspection.facts.filter((fact) => fact.status === 'QUESTION').length,
     confirmedFactsCount: inspection.facts.filter((fact) => fact.status === 'CONFIRMED').length,
-    questionShare: inspection.facts.length > 0 ? inspection.facts.filter((fact) => fact.status === 'QUESTION').length / inspection.facts.length : 0,
+    questionShare:
+      inspection.facts.length > 0
+        ? inspection.facts.filter((fact) => fact.status === 'QUESTION').length / inspection.facts.length
+        : 0,
     complete,
   };
 }
 
 function ratingFor(
   config: AppConfig,
-  safeRestoreCost: number,
   restoreBudget: number,
   remainingBudget: number,
-  statedRestoreCost: number,
   forecast: ForecastResult,
   criticalBodyRisks: BodyRisk[],
+  otherBodyRisks: BodyRisk[],
   unknownCostCount: number,
   askingPrice: number,
   vehicle: VehicleInfo,
 ): RatingResult {
+  const years = forecastYears(config);
+  const annualLimit = config.scenario.annualLimit > 0 ? config.scenario.annualLimit : 1;
   const hardBlocks: string[] = [];
   const warnings: string[] = [];
-  if (askingPrice > config.maxAskingPrice) hardBlocks.push(`Цена объявления выше ${config.maxAskingPrice.toLocaleString('ru-RU')} ₽.`);
+  if (askingPrice > config.maxAskingPrice)
+    hardBlocks.push(`Цена объявления выше ${config.maxAskingPrice.toLocaleString('ru-RU')} ₽.`);
   if (remainingBudget < 0) hardBlocks.push('Безопасная смета превышает доступный бюджет доведения.');
-  if (unknownCostCount > 0) hardBlocks.push('Есть работы без оценимой стоимости.');
+  if (unknownCostCount > 0)
+    hardBlocks.push(
+      unknownCostCount === 1
+        ? 'Есть работа без оценённой стоимости — смета неполная.'
+        : `Работ без оценённой стоимости: ${unknownCostCount} — смета неполная.`,
+    );
   if (criticalBodyRisks.length > 0) hardBlocks.push('Есть критический кузовной или геометрический риск.');
-  if (!forecast.complete) hardBlocks.push('Пятилетний прогноз не полностью настроен.');
+  if (otherBodyRisks.length > 0) warnings.push('Отмечен кузовной риск, оцениваемый как ремонтная работа.');
+  if (!forecast.complete) hardBlocks.push('Прогноз владения настроен не полностью.');
   if (forecast.years.some((year) => year.expectedTotal > config.scenario.annualLimit)) {
-    hardBlocks.push(`Ожидаемые расходы одного из годов выше лимита ${config.scenario.annualLimit.toLocaleString('ru-RU')} ₽.`);
+    hardBlocks.push(
+      `Ожидаемые расходы одного из годов выше лимита ${config.scenario.annualLimit.toLocaleString('ru-RU')} ₽.`,
+    );
   }
   if (remainingBudget >= 0 && restoreBudget > 0 && remainingBudget / restoreBudget < config.greenReserveRatio) {
     warnings.push('Запас доведения ниже зелёной зоны.');
   }
-  if (forecast.probabilityAnyLimitViolation > 0) warnings.push(`Есть модельная вероятность превышения годового лимита: ${(forecast.probabilityAnyLimitViolation * 100).toFixed(1)}%.`);
-  if (forecast.probabilityCloseMajorRepairs > 0) warnings.push(`Есть модельная вероятность двух крупных ремонтов ближе чем через ${config.minMonthsBetweenMajorRepairs} месяца.`);
+  if (forecast.probabilityAnyLimitViolation > 0)
+    warnings.push(
+      `Есть модельная вероятность превышения годового лимита: ${(forecast.probabilityAnyLimitViolation * 100).toFixed(1)}%.`,
+    );
+  if (forecast.probabilityCloseMajorRepairs > 0)
+    warnings.push(
+      `Есть модельная вероятность двух крупных ремонтов ближе чем через ${config.minMonthsBetweenMajorRepairs} месяца.`,
+    );
 
   const ratio = restoreBudget > 0 ? remainingBudget / restoreBudget : 0;
-  const budgetScore = clamp(ratio / config.greenReserveRatio * 100, 0, 100);
-  const avgAnnual = forecast.totalCost / config.scenario.years;
-  const ownershipScore = clamp((1 - avgAnnual / config.scenario.annualLimit) * 100, 0, 100);
+  const greenRatio = config.greenReserveRatio > 0 ? config.greenReserveRatio : 1;
+  const budgetScore = clamp((ratio / greenRatio) * 100, 0, 100);
+  const avgAnnual = forecast.totalCost / years;
+  const ownershipScore = clamp((1 - avgAnnual / annualLimit) * 100, 0, 100);
   const annualRiskScore = (1 - forecast.probabilityAnyLimitViolation) * 100;
-  const frequencyScore = clamp((1 - forecast.expectedMajorRepairsPerYear / config.majorRepairsPerYearLimit) * 100, 0, 100);
+  const majorLimit = config.majorRepairsPerYearLimit > 0 ? config.majorRepairsPerYearLimit : 1;
+  const frequencyScore = clamp((1 - forecast.expectedMajorRepairsPerYear / majorLimit) * 100, 0, 100);
   const maxScore = (1 - forecast.probabilityCriticalRepair) * 100;
   const engineScore = (1 - forecast.probabilityEngineEvent) * 100;
   const transmissionScore = (1 - forecast.probabilityTransmissionEvent) * 100;
-  const predictabilityScore = clamp((1 - forecast.uncertaintyLoad / (config.scenario.years * config.scenario.annualLimit)) * 100, 0, 100);
-  const expectedServiceAnnual = forecast.years.reduce((sum, year) => sum + year.expectedRepairs + year.service + year.fluids + year.consumables + year.tires, 0) / config.scenario.years;
-  const serviceScore = clamp((1 - expectedServiceAnnual / config.scenario.annualLimit) * 100, 0, 100);
+  const predictabilityScore = clamp((1 - forecast.uncertaintyLoad / (years * annualLimit)) * 100, 0, 100);
+  const expectedServiceAnnual =
+    forecast.years.reduce(
+      (sum, year) => sum + year.expectedRepairs + year.service + year.fluids + year.consumables + year.tires,
+      0,
+    ) / years;
+  const serviceScore = clamp((1 - expectedServiceAnnual / annualLimit) * 100, 0, 100);
   const vehicleInfoRatingScore = vehicleInfoScore(vehicle);
   const rawComponents = [
     ['budget', 'Соответствие бюджету доведения', config.ratingWeights.budget, budgetScore],
@@ -444,17 +586,36 @@ function ratingFor(
     ['transmission', 'Риск АКПП', config.ratingWeights.transmission, transmissionScore],
     ['predictability', 'Предсказуемость расходов', config.ratingWeights.predictability, predictabilityScore],
     ['service', 'Стоимость ремонта и обслуживания', config.ratingWeights.service, serviceScore],
-    ['vehicle-info', 'История и комплектность автомобиля', config.ratingWeights.vehicleInfo ?? 0, vehicleInfoRatingScore],
+    [
+      'vehicle-info',
+      'История и комплектность автомобиля',
+      config.ratingWeights.vehicleInfo ?? 0,
+      vehicleInfoRatingScore,
+    ],
   ] as const;
-  const components = rawComponents.map(([id, label, weight, score]) => ({ id, label, weight, score: roundCurrency(score * 10) / 10 }));
-  const weightTotal = components.reduce((sum, component) => sum + component.weight, 0) || 1;
-  const score = components.reduce((sum, component) => sum + component.score * component.weight / weightTotal, 0);
-  return {
+  const components = rawComponents.map(([id, label, weight, score]) => ({
+    id,
+    label,
+    weight,
     score: roundCurrency(score * 10) / 10,
+  }));
+  const weightTotal = components.reduce((sum, component) => sum + Math.max(0, component.weight), 0);
+  if (weightTotal <= 0) warnings.push('Все веса рейтинга обнулены — итоговый балл не рассчитывается.');
+  const score =
+    weightTotal > 0
+      ? components.reduce((sum, component) => sum + (component.score * Math.max(0, component.weight)) / weightTotal, 0)
+      : null;
+  return {
+    score: score === null ? null : roundCurrency(score * 10) / 10,
     components,
     hardBlocks,
     warnings,
-    status: hardBlocks.length > 0 ? 'BLOCKED' : forecast.complete && forecast.questionFactsCount === 0 ? 'VALID' : 'PROVISIONAL',
+    status:
+      hardBlocks.length > 0
+        ? 'BLOCKED'
+        : forecast.complete && forecast.questionFactsCount === 0
+          ? 'VALID'
+          : 'PROVISIONAL',
   };
 }
 
@@ -466,36 +627,56 @@ export function calculateInspection(inspection: Inspection, config = inspection.
     return {
       ...fact,
       coefficient,
-      safeCost: fact.kind === 'WORK' && fact.statedCost !== undefined ? roundCurrency(fact.statedCost * coefficient) : 0,
+      safeCost:
+        fact.kind === 'WORK' && fact.statedCost !== undefined ? roundCurrency(statedCostOf(fact) * coefficient) : 0,
     };
   });
   const workFacts = calculatedFacts.filter((fact) => fact.kind === 'WORK');
-  const statedRestoreCost = workFacts.reduce((sum, fact) => sum + (fact.statedCost ?? 0), 0);
-  const immediateSafeRestoreCost = workFacts.filter((fact) => fact.urgency === 'NOW').reduce((sum, fact) => sum + fact.safeCost, 0);
-  const nearTermSafeRestoreCost = workFacts.filter((fact) => fact.urgency === 'NOW' || fact.urgency === 'SOON').reduce((sum, fact) => sum + fact.safeCost, 0);
+  const statedRestoreCost = workFacts.reduce((sum, fact) => sum + statedCostOf(fact), 0);
+  const immediateSafeRestoreCost = workFacts
+    .filter((fact) => fact.urgency === 'NOW')
+    .reduce((sum, fact) => sum + fact.safeCost, 0);
+  const nearTermSafeRestoreCost = workFacts
+    .filter((fact) => fact.urgency === 'NOW' || fact.urgency === 'SOON')
+    .reduce((sum, fact) => sum + fact.safeCost, 0);
   const fullSafeRestoreCost = workFacts.reduce((sum, fact) => sum + fact.safeCost, 0);
   const deferredSafeRestoreCost = fullSafeRestoreCost - immediateSafeRestoreCost;
   const safeRestoreCost = immediateSafeRestoreCost;
-  const uncertaintyPremium = safeRestoreCost - workFacts.filter((fact) => fact.urgency === 'NOW').reduce((sum, fact) => sum + (fact.statedCost ?? 0), 0);
+  const uncertaintyPremium =
+    safeRestoreCost -
+    workFacts.filter((fact) => fact.urgency === 'NOW').reduce((sum, fact) => sum + statedCostOf(fact), 0);
   const fullUncertaintyPremium = fullSafeRestoreCost - statedRestoreCost;
   const remainingBudget = restoreBudget - safeRestoreCost;
   const fullRemainingBudget = restoreBudget - fullSafeRestoreCost;
   const reserveRatio = restoreBudget > 0 ? remainingBudget / restoreBudget : null;
   const fullReserveRatio = restoreBudget > 0 ? fullRemainingBudget / restoreBudget : null;
-  const zone = inspection.pricing.askingPrice > config.maxAskingPrice
-    ? 'FILTER_FAIL'
-    : reserveRatio !== null && reserveRatio >= config.greenReserveRatio
-      ? 'GREEN'
-      : reserveRatio !== null && reserveRatio >= config.yellowReserveRatio
-        ? 'YELLOW'
-        : 'RED';
-  const criticalBodyRisks = Array.from(new Set(inspection.facts.flatMap((fact) => fact.bodyRisks)));
-  const unknownCostCount = inspection.facts.filter((fact) => fact.kind === 'WORK' && (!fact.statedCost || fact.statedCost <= 0)).length;
+  const zone =
+    inspection.pricing.askingPrice > config.maxAskingPrice
+      ? 'FILTER_FAIL'
+      : reserveRatio !== null && reserveRatio >= config.greenReserveRatio
+        ? 'GREEN'
+        : reserveRatio !== null && reserveRatio >= config.yellowReserveRatio
+          ? 'YELLOW'
+          : 'RED';
+  const bodyRisks = Array.from(new Set(inspection.facts.flatMap((fact) => fact.bodyRisks)));
+  const criticalBodyRisks = bodyRisks.filter((risk) => CRITICAL_BODY_RISKS.includes(risk));
+  const otherBodyRisks = bodyRisks.filter((risk) => !CRITICAL_BODY_RISKS.includes(risk));
+  const unknownCostCount = inspection.facts.filter((fact) => fact.kind === 'WORK' && !(statedCostOf(fact) > 0)).length;
   const questionFactsCount = inspection.facts.filter((fact) => fact.status === 'QUESTION').length;
   const confirmedFactsCount = inspection.facts.filter((fact) => fact.status === 'CONFIRMED').length;
   const questionShare = inspection.facts.length > 0 ? questionFactsCount / inspection.facts.length : 0;
-  const forecast = calculateForecast(inspection, config, safeRestoreCost, fullUncertaintyPremium);
-  const rating = ratingFor(config, safeRestoreCost, restoreBudget, remainingBudget, statedRestoreCost, forecast, criticalBodyRisks, unknownCostCount, inspection.pricing.askingPrice, inspection.vehicle);
+  const forecast = calculateForecast(inspection, config, calculationPrice, safeRestoreCost, fullUncertaintyPremium);
+  const rating = ratingFor(
+    config,
+    restoreBudget,
+    remainingBudget,
+    forecast,
+    criticalBodyRisks,
+    otherBodyRisks,
+    unknownCostCount,
+    inspection.pricing.askingPrice,
+    inspection.vehicle,
+  );
   return {
     calculationPrice,
     priceSource,
@@ -514,7 +695,9 @@ export function calculateInspection(inspection: Inspection, config = inspection.
     fullReserveRatio,
     zone,
     calculatedFacts,
+    bodyRisks,
     criticalBodyRisks,
+    otherBodyRisks,
     unknownCostCount,
     questionFactsCount,
     confirmedFactsCount,
