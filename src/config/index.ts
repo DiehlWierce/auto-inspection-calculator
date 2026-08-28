@@ -27,7 +27,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   criticalRepairThreshold: 120000,
   majorRepairsPerYearLimit: 4,
   minMonthsBetweenMajorRepairs: 3,
-  simulationScenarios: 20000,
+  simulationScenarios: 5000,
   simulationSeed: 20260827,
   ratingWeights: {
     budget: 20,
@@ -40,6 +40,14 @@ export const DEFAULT_CONFIG: AppConfig = {
     predictability: 5,
     service: 5,
     vehicleInfo: 5,
+  },
+  wear: {
+    refAgeYears: 10,
+    agePerYear: 0.05,
+    refMileageKm: 150000,
+    mileagePer100k: 0.25,
+    min: 0.8,
+    maxMultiplier: 2.2,
   },
   scenario: {
     years: 5,

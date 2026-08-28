@@ -15,11 +15,12 @@ export function EventEditor({ event, allowMode, onCancel, onSave }: { event: Rep
   const [maxCost, setMaxCost] = useState(event.maxCost);
   const [monthStart, setMonthStart] = useState(event.mode === 'SCHEDULED' ? event.scheduledMonth ?? event.monthStart : event.monthStart);
   const [monthEnd, setMonthEnd] = useState(event.monthEnd);
+  const [recurrenceMonths, setRecurrenceMonths] = useState(event.recurrenceMonths ?? 0);
   const save = (submitEvent: FormEvent) => {
     submitEvent.preventDefault();
     const scheduledMonth = Math.max(1, Math.min(60, Math.round(monthStart)));
     if (!name.trim()) return;
-    onSave({ ...event, name: name.trim(), category, mode, probability5y: mode === 'SCHEDULED' ? 1 : Math.min(100, Math.max(0, probability)) / 100, repairCost: Math.max(0, cost), coefficient: Math.max(0, coefficient), maxCost: Math.max(0, maxCost), monthStart: mode === 'SCHEDULED' ? scheduledMonth : Math.max(1, Math.round(monthStart)), monthEnd: mode === 'SCHEDULED' ? scheduledMonth : Math.max(Math.round(monthStart), Math.round(monthEnd)), scheduledMonth: mode === 'SCHEDULED' ? scheduledMonth : undefined });
+    onSave({ ...event, name: name.trim(), category, mode, probability5y: mode === 'SCHEDULED' ? 1 : Math.min(100, Math.max(0, probability)) / 100, repairCost: Math.max(0, cost), coefficient: Math.max(0, coefficient), maxCost: Math.max(0, maxCost), monthStart: mode === 'SCHEDULED' ? scheduledMonth : Math.max(1, Math.round(monthStart)), monthEnd: mode === 'SCHEDULED' ? scheduledMonth : Math.max(Math.round(monthStart), Math.round(monthEnd)), recurrenceMonths: mode === 'SCHEDULED' ? 0 : Math.max(0, Math.round(recurrenceMonths)), scheduledMonth: mode === 'SCHEDULED' ? scheduledMonth : undefined });
   };
   return <form className="event-editor" onSubmit={save}>
     <div className="form-grid two">
@@ -36,6 +37,10 @@ export function EventEditor({ event, allowMode, onCancel, onSave }: { event: Rep
       <Field label="Максимальная стоимость, ₽"><MoneyInput value={maxCost} onCommit={(value) => setMaxCost(value ?? 0)} /></Field>
       {mode === 'RISK' && <><Field label="Начало окна, мес."><NumberInput min={1} max={60} value={monthStart} onCommit={(value) => setMonthStart(value ?? 0)} /></Field><Field label="Конец окна, мес."><NumberInput min={1} max={60} value={monthEnd} onCommit={(value) => setMonthEnd(value ?? 0)} /></Field></>}
     </div>
+    {mode === 'RISK' && <div className="form-grid two">
+      <Field label="Повторяется раз в, мес." hint="0 — разовое событие"><NumberInput min={0} max={60} value={recurrenceMonths} onCommit={(value) => setRecurrenceMonths(value ?? 0)} /></Field>
+      <p className="field-note">{recurrenceMonths > 0 ? `Событие перевзводится примерно раз в ${recurrenceMonths} мес. и присутствует во всех годах прогноза. P — вероятность за один такой цикл.` : 'Разовое событие: после первого наступления его интенсивность затухает. P — вероятность за весь срок прогноза.'}</p>
+    </div>}
     <div className="form-actions"><button type="button" className="ghost-button" onClick={onCancel}>Отмена</button><button type="submit" className="primary-button">Сохранить событие</button></div>
   </form>;
 }

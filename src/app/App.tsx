@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAppData } from '../hooks/useAppData';
 import { useCalculation } from '../hooks/useCalculation';
+import { useForecastRisk } from '../hooks/useForecastRisk';
 import { cloneConfig } from '../config';
 import { CompareView } from '../views/CompareView';
 import { FAQView } from '../views/FAQView';
@@ -9,7 +10,8 @@ import { NewInspectionView } from '../views/NewInspectionView';
 import { ForecastView } from '../views/forecast/ForecastView';
 import { InspectionView } from '../views/inspection/InspectionView';
 import { SettingsView } from '../views/settings/SettingsView';
-import type { Inspection, View } from '../types';
+import { calculateInspection } from '../calc';
+import type { CalculationResult, Inspection, View } from '../types';
 
 function App() {
   const { config, inspections, loading, updateInspection, createInspection, removeInspection, updateConfig, exportBackup, importBackup } = useAppData();
@@ -49,8 +51,6 @@ function App() {
 
   if (loading || !config) return <div className="loading-screen">Загрузка локального хранилища…</div>;
 
-  const activeResult = active ? results.get(active.id) : undefined;
-
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -67,8 +67,8 @@ function App() {
       <main className="main-content">
         {view === 'history' && <HistoryView inspections={inspections} results={results} config={config} onOpen={(id) => { setActiveId(id); setView('inspection'); }} onNew={() => setView('new')} onDelete={deleteInspection} onResume={resumeInspection} />}
         {view === 'new' && <NewInspectionView config={config} onCancel={() => setView('history')} onCreate={openInspection} />}
-        {view === 'inspection' && active && activeResult && <InspectionView inspection={active} result={activeResult} onUpdate={updateInspection} onNavigate={setView} />}
-        {view === 'forecast' && active && activeResult && <ForecastView inspection={active} result={activeResult} onUpdate={updateInspection} onApplyConfig={applyCurrentConfigToActive} onBack={() => setView('inspection')} />}
+        {view === 'inspection' && active && <ActiveInspection inspection={active} results={results} view={view} onUpdate={updateInspection} onApplyConfig={applyCurrentConfigToActive} onNavigate={setView} />}
+        {view === 'forecast' && active && <ActiveInspection inspection={active} results={results} view={view} onUpdate={updateInspection} onApplyConfig={applyCurrentConfigToActive} onNavigate={setView} />}
         {view === 'compare' && <CompareView inspections={inspections} results={results} config={config} onOpen={(id) => { setActiveId(id); setView('inspection'); }} />}
         {view === 'settings' && <SettingsView config={config} active={active} onUpdate={updateConfig} onApplyActive={applyCurrentConfigToActive} />}
         {view === 'faq' && <FAQView />}
@@ -82,6 +82,13 @@ function App() {
       </nav>
     </div>
   );
+}
+
+function ActiveInspection({ inspection, results, view, onUpdate, onApplyConfig, onNavigate }: { inspection: Inspection; results: Map<string, CalculationResult>; view: View; onUpdate: (inspection: Inspection) => void; onApplyConfig: () => void; onNavigate: (view: View) => void }) {
+  const base = results.get(inspection.id);
+  const result = useForecastRisk(inspection, base ?? calculateInspection(inspection, inspection.configSnapshot, { withRisk: false }));
+  if (view === 'forecast') return <ForecastView inspection={inspection} result={result} onUpdate={onUpdate} onApplyConfig={onApplyConfig} onBack={() => onNavigate('inspection')} />;
+  return <InspectionView inspection={inspection} result={result} onUpdate={onUpdate} onNavigate={onNavigate} />;
 }
 
 function NavItem({ icon, label, active, onClick }: { icon: string; label: string; active: boolean; onClick: () => void }) {

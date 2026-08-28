@@ -545,3 +545,11 @@ input, select, textarea { font-size: 14px; line-height: 1.25; }
   .price-book-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 10px; }
   .price-book-label { grid-column: 1 / -1; }
 }
+
+.risk-card.pending { color: var(--muted); background: #f4f6fa; }
+.risk-card.pending strong { color: var(--muted); }
+.table-pending { color: var(--muted); }
+.forecast-p80-cell { color: #7a4a00; background: #fdf8ee; font-weight: 800; }
+
+.wear-heading { margin-top: 18px; }
+.wear-heading h3 { margin: 0; color: var(--navy); font-size: 15px; }

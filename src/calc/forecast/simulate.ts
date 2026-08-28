@@ -1,25 +1,33 @@
-import { clamp, roundCurrency } from '../../utils';
-import { hashSeed, mulberry32 } from '../rng';
-import type { AppConfig, RepairEvent } from '../../types';
+import { mulberry32 } from '../rng';
+import { sampleTriangular } from './model';
+import type { ForecastModel } from './model';
+import type { AppConfig } from '../../types';
 
-export function simulateRisks(
-  events: Array<RepairEvent & { enabled: boolean }>,
-  config: AppConfig,
-  modelId: string,
-  baseline: number[],
-): {
+export interface RiskForecast {
+  probabilityAnyMajorRepair: number;
+  probabilityAnyLimitViolation: number;
+  probabilityAnyMajorRepairLimitViolation: number;
+  probabilityCloseMajorRepairs: number;
+  probabilityCriticalRepair: number;
   limitByYear: number[];
   majorByYear: number[];
   majorPresenceByYear: number[];
-  anyLimit: number;
-  anyMajor: number;
-  anyMajorRepair: number;
-  closeMajor: number;
-  critical: number;
-} {
+}
+
+const CACHE_LIMIT = 50;
+const cache = new Map<number, RiskForecast>();
+
+export function cachedRisk(hash: number): RiskForecast | null {
+  return cache.get(hash) ?? null;
+}
+
+export function simulateRisks(model: ForecastModel, config: AppConfig, baseline: number[], hash: number): RiskForecast {
+  const existing = cache.get(hash);
+  if (existing) return existing;
+
   const years = config.scenario.years;
   const scenarios = Math.max(1, Math.round(config.simulationScenarios));
-  const random = mulberry32(hashSeed(`${config.simulationSeed}:${modelId}:${JSON.stringify(events)}`));
+  const random = mulberry32((hash ^ config.simulationSeed) >>> 0);
   const limitByYear = Array.from({ length: years }, () => 0);
   const majorByYear = Array.from({ length: years }, () => 0);
   const majorPresenceByYear = Array.from({ length: years }, () => 0);
@@ -29,29 +37,41 @@ export function simulateRisks(
   let closeMajor = 0;
   let critical = 0;
 
+  const totals = new Array<number>(years);
+  const majorCounts = new Array<number>(years);
+  const majorMonths: number[] = [];
+
   for (let scenario = 0; scenario < scenarios; scenario += 1) {
-    const totals = [...baseline];
-    const majorCounts = Array.from({ length: years }, () => 0);
-    const majorMonths: number[] = [];
+    for (let year = 0; year < years; year += 1) {
+      totals[year] = baseline[year];
+      majorCounts[year] = 0;
+    }
+    majorMonths.length = 0;
     let scenarioCritical = false;
 
-    for (const event of events) {
-      if (!event.enabled || random() >= event.probability5y) continue;
-      const start = clamp(Math.round(event.monthStart), 1, years * 12);
-      const end = clamp(Math.max(start, Math.round(event.monthEnd)), start, years * 12);
-      const month = start + Math.floor(random() * (end - start + 1));
-      const year = Math.floor((month - 1) / 12);
-      const riskCost = event.maxCost > 0 ? event.maxCost : roundCurrency(event.repairCost * event.coefficient);
-      totals[year] += riskCost;
-      if (riskCost > config.criticalRepairThreshold) scenarioCritical = true;
-      if (riskCost >= config.majorRepairThreshold) {
-        majorCounts[year] += 1;
-        majorMonths.push(month);
+    for (const prepared of model.events) {
+      if (prepared.mode === 'SCHEDULED') continue;
+      let survived = true;
+      for (let index = prepared.monthStart - 1; index < prepared.monthEnd && index < model.totalMonths; index += 1) {
+        if (!survived) break;
+        const wear = prepared.ageSensitive ? model.wearByMonth[index] : 1;
+        const rate = Math.min(1, prepared.hazard * wear);
+        if (rate <= 0 || random() >= rate) continue;
+        if (prepared.recurrenceMonths === 0) survived = false;
+        const cost = sampleTriangular(prepared.costMin, prepared.costMode, prepared.costMax, random);
+        const month = index + 1;
+        const year = Math.floor(index / 12);
+        totals[year] += cost;
+        if (cost > config.criticalRepairThreshold) scenarioCritical = true;
+        if (cost >= config.majorRepairThreshold) {
+          majorCounts[year] += 1;
+          majorMonths.push(month);
+        }
       }
     }
 
     let scenarioLimit = false;
-    let scenarioMajor = false;
+    let scenarioMajorLimit = false;
     for (let year = 0; year < years; year += 1) {
       if (totals[year] > config.scenario.annualLimit) {
         limitByYear[year] += 1;
@@ -59,27 +79,29 @@ export function simulateRisks(
       }
       if (majorCounts[year] > config.majorRepairsPerYearLimit) {
         majorByYear[year] += 1;
-        scenarioMajor = true;
+        scenarioMajorLimit = true;
       }
       if (majorCounts[year] > 0) majorPresenceByYear[year] += 1;
     }
     majorMonths.sort((left, right) => left - right);
-    const close = majorMonths.some((month, index) => index > 0 && month - majorMonths[index - 1] < config.minMonthsBetweenMajorRepairs);
-    if (close) closeMajor += 1;
+    if (majorMonths.some((month, index) => index > 0 && month - majorMonths[index - 1] < config.minMonthsBetweenMajorRepairs)) closeMajor += 1;
     if (scenarioLimit) anyLimit += 1;
-    if (scenarioMajor) anyMajor += 1;
+    if (scenarioMajorLimit) anyMajor += 1;
     if (majorMonths.length > 0) anyMajorRepair += 1;
     if (scenarioCritical) critical += 1;
   }
 
-  return {
+  const result: RiskForecast = {
+    probabilityAnyMajorRepair: anyMajorRepair / scenarios,
+    probabilityAnyLimitViolation: anyLimit / scenarios,
+    probabilityAnyMajorRepairLimitViolation: anyMajor / scenarios,
+    probabilityCloseMajorRepairs: closeMajor / scenarios,
+    probabilityCriticalRepair: critical / scenarios,
     limitByYear: limitByYear.map((value) => value / scenarios),
     majorByYear: majorByYear.map((value) => value / scenarios),
     majorPresenceByYear: majorPresenceByYear.map((value) => value / scenarios),
-    anyLimit: anyLimit / scenarios,
-    anyMajor: anyMajor / scenarios,
-    anyMajorRepair: anyMajorRepair / scenarios,
-    closeMajor: closeMajor / scenarios,
-    critical: critical / scenarios,
   };
+  if (cache.size >= CACHE_LIMIT) cache.delete(cache.keys().next().value as number);
+  cache.set(hash, result);
+  return result;
 }

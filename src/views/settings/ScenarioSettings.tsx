@@ -17,6 +17,7 @@ const YEAR_ROWS: Array<{ label: string; key: ScenarioArrayKey }> = [
 export function ScenarioSettings({ config, onUpdate }: { config: AppConfig; onUpdate: (updater: (config: AppConfig) => AppConfig) => void }) {
   const setScenarioNumber = (key: 'annualKm' | 'fuelPrice' | 'annualLimit', value: number) => onUpdate((current) => { current.scenario[key] = value; return current; });
   const setArrayValue = (key: ScenarioArrayKey, index: number, value: number) => onUpdate((current) => { current.scenario[key][index] = value; return current; });
+  const setWear = (key: keyof AppConfig['wear'], value: number) => onUpdate((current) => { current.wear[key] = value; return current; });
   return <div className="content-card">
     <div className="section-heading compact-heading"><div><p className="eyebrow">ОБЩИЕ ПРАВИЛА</p><h2>Сценарий эксплуатации</h2></div></div>
     <div className="form-grid three">
@@ -33,6 +34,17 @@ export function ScenarioSettings({ config, onUpdate }: { config: AppConfig; onUp
     <div className="form-grid two">
       <Field label="Интервал между крупными, мес."><NumberInput min={1} value={config.minMonthsBetweenMajorRepairs} onCommit={(value) => onUpdate((current) => { current.minMonthsBetweenMajorRepairs = value ?? 0; return current; })} /></Field>
       <Field label="Сценариев симуляции" hint="Только риск-метрики"><NumberInput min={500} step={500} value={config.simulationScenarios} onCommit={(value) => onUpdate((current) => { current.simulationScenarios = value ?? 0; return current; })} /></Field>
+    </div>
+    <div className="section-heading compact-heading wear-heading"><div><p className="eyebrow">ФАКТОР ИЗНОСА</p><h3>Возраст и пробег</h3><p className="muted">Множитель к интенсивности ремонтов. Растёт от опорных значений и ограничен сверху.</p></div></div>
+    <div className="form-grid three">
+      <Field label="Опорный возраст, лет"><NumberInput min={0} value={config.wear.refAgeYears} onCommit={(value) => setWear('refAgeYears', value ?? 0)} /></Field>
+      <Field label="Прибавка за год сверх"><NumberInput min={0} step="0.01" value={config.wear.agePerYear} onCommit={(value) => setWear('agePerYear', value ?? 0)} /></Field>
+      <Field label="Опорный пробег, км"><NumberInput min={0} step={10000} value={config.wear.refMileageKm} onCommit={(value) => setWear('refMileageKm', value ?? 0)} /></Field>
+    </div>
+    <div className="form-grid three">
+      <Field label="Прибавка за 100 000 км"><NumberInput min={0} step="0.01" value={config.wear.mileagePer100k} onCommit={(value) => setWear('mileagePer100k', value ?? 0)} /></Field>
+      <Field label="Минимальный множитель"><NumberInput min={0} step="0.05" value={config.wear.min} onCommit={(value) => setWear('min', value ?? 0)} /></Field>
+      <Field label="Максимальный множитель"><NumberInput min={1} step="0.1" value={config.wear.maxMultiplier} onCommit={(value) => setWear('maxMultiplier', value ?? 0)} /></Field>
     </div>
     <div className="year-inputs">
       <div className="year-header"><span>Расход</span>{Array.from({ length: Math.min(config.scenario.years, 5) }, (_, index) => <span key={index}>Год {index + 1}</span>)}</div>

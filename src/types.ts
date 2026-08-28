@@ -87,6 +87,17 @@ export interface RepairEvent {
   monthEnd: number;
   mode?: 'RISK' | 'SCHEDULED';
   scheduledMonth?: number;
+  recurrenceMonths?: number;
+  ageSensitive?: boolean;
+}
+
+export interface WearConfig {
+  refAgeYears: number;
+  agePerYear: number;
+  refMileageKm: number;
+  mileagePer100k: number;
+  min: number;
+  maxMultiplier: number;
 }
 
 export interface ScenarioConfig {
@@ -131,6 +142,7 @@ export interface AppConfig {
   simulationScenarios: number;
   simulationSeed: number;
   ratingWeights: RatingWeights;
+  wear: WearConfig;
   scenario: ScenarioConfig;
   models: ModelProfile[];
   coefficients: CoefficientRule[];
@@ -222,6 +234,7 @@ export interface EventOverride {
   maxCost?: number;
   monthStart?: number;
   monthEnd?: number;
+  recurrenceMonths?: number;
 }
 
 export interface Inspection {
@@ -263,9 +276,11 @@ export interface YearForecast {
   deferredFacts: number;
   expectedRepairs: number;
   expectedTotal: number;
-  probabilityLimitViolation: number;
-  probabilityMajorRepairLimitViolation: number;
-  probabilityAnyMajorRepair: number;
+  p80Total: number;
+  p90Total: number;
+  probabilityLimitViolation: number | null;
+  probabilityMajorRepairLimitViolation: number | null;
+  probabilityAnyMajorRepair: number | null;
 }
 
 export interface MonthForecast {
@@ -287,6 +302,9 @@ export interface MonthForecast {
   plannedReserve: number;
   plannedBudget: number;
   expectedTotal: number;
+  p50Total: number;
+  p80Total: number;
+  p90Total: number;
   reserveBalance: number;
 }
 
@@ -298,19 +316,25 @@ export interface ForecastResult {
   fullAverageMonthlyCost: number;
   expectedMajorRepairs5y: number;
   expectedMajorRepairsPerYear: number;
-  probabilityAnyLimitViolation: number;
-  probabilityAnyMajorRepairLimitViolation: number;
-  probabilityAnyMajorRepair: number;
-  probabilityCloseMajorRepairs: number;
-  probabilityCriticalRepair: number;
+  p80MonthlyCost: number;
+  p80FiveYearCost: number;
+  expectedRecurringSpend5y: number;
+  expectedOneShotSpend5y: number;
+  probabilityAnyLimitViolation: number | null;
+  probabilityAnyMajorRepairLimitViolation: number | null;
+  probabilityAnyMajorRepair: number | null;
+  probabilityCloseMajorRepairs: number | null;
+  probabilityCriticalRepair: number | null;
   probabilityEngineEvent: number;
   probabilityTransmissionEvent: number;
+  riskPending: boolean;
   uncertaintyLoad: number;
   eventRows: Array<{
     event: RepairEvent;
     enabled: boolean;
     expectedCost: number;
     riskCost: number;
+    recurrenceMonths: number;
     mode: 'RISK' | 'SCHEDULED';
   }>;
   months: MonthForecast[];
@@ -322,7 +346,7 @@ export interface ForecastResult {
 
 export interface RatingResult {
   score: number | null;
-  components: Array<{ id: string; label: string; weight: number; score: number }>;
+  components: Array<{ id: string; label: string; weight: number; score: number | null }>;
   hardBlocks: string[];
   warnings: string[];
   status: 'VALID' | 'PROVISIONAL' | 'BLOCKED';

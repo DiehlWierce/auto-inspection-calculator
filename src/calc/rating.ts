@@ -45,16 +45,17 @@ export function ratingFor(
   if (remainingBudget >= 0 && restoreBudget > 0 && remainingBudget / restoreBudget < config.greenReserveRatio) {
     warnings.push('Запас доведения ниже зелёной зоны.');
   }
-  if (forecast.probabilityAnyLimitViolation > 0) warnings.push(`Есть модельная вероятность превышения годового лимита: ${(forecast.probabilityAnyLimitViolation * 100).toFixed(1)}%.`);
-  if (forecast.probabilityCloseMajorRepairs > 0) warnings.push(`Есть модельная вероятность двух крупных ремонтов ближе чем через ${config.minMonthsBetweenMajorRepairs} месяца.`);
+  if ((forecast.probabilityAnyLimitViolation ?? 0) > 0) warnings.push(`Есть модельная вероятность превышения годового лимита: ${((forecast.probabilityAnyLimitViolation ?? 0) * 100).toFixed(1)}%.`);
+  if ((forecast.probabilityCloseMajorRepairs ?? 0) > 0) warnings.push(`Есть модельная вероятность двух крупных ремонтов ближе чем через ${config.minMonthsBetweenMajorRepairs} месяца.`);
+  if (forecast.riskPending) warnings.push('Риск-метрики ещё считаются: оценка рисков в рейтинге пока не учтена.');
 
   const ratio = restoreBudget > 0 ? remainingBudget / restoreBudget : 0;
   const budgetScore = clamp(ratio / config.greenReserveRatio * 100, 0, 100);
   const avgAnnual = forecast.totalCost / config.scenario.years;
   const ownershipScore = clamp((1 - avgAnnual / config.scenario.annualLimit) * 100, 0, 100);
-  const annualRiskScore = (1 - forecast.probabilityAnyLimitViolation) * 100;
+  const annualRiskScore = forecast.probabilityAnyLimitViolation === null ? null : (1 - forecast.probabilityAnyLimitViolation) * 100;
   const frequencyScore = clamp((1 - forecast.expectedMajorRepairsPerYear / config.majorRepairsPerYearLimit) * 100, 0, 100);
-  const maxScore = (1 - forecast.probabilityCriticalRepair) * 100;
+  const maxScore = forecast.probabilityCriticalRepair === null ? null : (1 - forecast.probabilityCriticalRepair) * 100;
   const engineScore = (1 - forecast.probabilityEngineEvent) * 100;
   const transmissionScore = (1 - forecast.probabilityTransmissionEvent) * 100;
   const predictabilityScore = clamp((1 - forecast.uncertaintyLoad / (config.scenario.years * config.scenario.annualLimit)) * 100, 0, 100);
@@ -73,14 +74,15 @@ export function ratingFor(
     ['service', 'Стоимость ремонта и обслуживания', config.ratingWeights.service, serviceScore],
     ['vehicle-info', 'История и комплектность автомобиля', config.ratingWeights.vehicleInfo ?? 0, vehicleInfoRatingScore],
   ] as const;
-  const components = rawComponents.map(([id, label, weight, score]) => ({ id, label, weight, score: roundCurrency(score * 10) / 10 }));
-  const weightTotal = components.reduce((sum, component) => sum + component.weight, 0) || 1;
-  const score = components.reduce((sum, component) => sum + component.score * component.weight / weightTotal, 0);
+  const components = rawComponents.map(([id, label, weight, score]) => ({ id, label, weight, score: score === null ? null : roundCurrency(score * 10) / 10 }));
+  const scored = components.filter((component) => component.score !== null);
+  const weightTotal = scored.reduce((sum, component) => sum + component.weight, 0) || 1;
+  const score = scored.reduce((sum, component) => sum + (component.score ?? 0) * component.weight / weightTotal, 0);
   return {
     score: roundCurrency(score * 10) / 10,
     components,
     hardBlocks,
     warnings,
-    status: hardBlocks.length > 0 ? 'BLOCKED' : forecast.complete && forecast.questionFactsCount === 0 && estimatedFactsCount === 0 ? 'VALID' : 'PROVISIONAL',
+    status: hardBlocks.length > 0 ? 'BLOCKED' : forecast.complete && !forecast.riskPending && forecast.questionFactsCount === 0 && estimatedFactsCount === 0 ? 'VALID' : 'PROVISIONAL',
   };
 }

@@ -8,6 +8,7 @@ export function normalizeConfig(stored: AppConfig | undefined): AppConfig {
     ...fallback,
     ...stored,
     ratingWeights: { ...fallback.ratingWeights, ...stored.ratingWeights },
+    wear: { ...fallback.wear, ...stored.wear },
     scenario: {
       ...fallback.scenario,
       ...stored.scenario,
@@ -43,10 +44,22 @@ function normalizeTemplates(storedTemplates: InspectionTemplate[] | undefined, f
   return [...builtIn, ...custom];
 }
 
+function withEventDefaults(event: RepairEvent, fallbackEvents: RepairEvent[]): RepairEvent {
+  const fallback = fallbackEvents.find((item) => item.id === event.id);
+  const mode = event.mode ?? fallback?.mode ?? 'RISK';
+  return {
+    ...event,
+    mode,
+    recurrenceMonths: event.recurrenceMonths ?? fallback?.recurrenceMonths ?? 0,
+    ageSensitive: event.ageSensitive ?? fallback?.ageSensitive ?? mode === 'RISK',
+  };
+}
+
 function normalizeRepairEvents(storedEvents: RepairEvent[] | undefined, fallbackEvents: RepairEvent[]): RepairEvent[] {
   if (!Array.isArray(storedEvents)) return fallbackEvents;
-  const legacyTimingEvent = storedEvents.find((event) => event.id === 'timing-belt' && event.modelIds.includes('corolla-e120'));
-  const withoutLegacy = storedEvents.filter((event) => event.id !== 'timing-belt' || !event.modelIds.includes('corolla-e120'));
+  const merged = storedEvents.map((event) => withEventDefaults(event, fallbackEvents));
+  const legacyTimingEvent = merged.find((event) => event.id === 'timing-belt' && event.modelIds.includes('corolla-e120'));
+  const withoutLegacy = merged.filter((event) => event.id !== 'timing-belt' || !event.modelIds.includes('corolla-e120'));
   if (!legacyTimingEvent) return withoutLegacy;
   const chainFallback = fallbackEvents.find((event) => event.id === 'corolla-timing-chain');
   const beltFallback = fallbackEvents.find((event) => event.id === 'timing-belt');

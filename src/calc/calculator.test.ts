@@ -129,24 +129,27 @@ describe('auto inspection calculation', () => {
     expect(row?.event.probability5y).toBe(1);
   });
 
-  it('accumulates each repair reserve only until its due month', () => {
+  it('spreads the whole future repair outflow evenly across the remaining months', () => {
     const config = cloneConfig(DEFAULT_CONFIG);
     config.repairEvents = [];
     const result = calculateInspection(inspection({ configSnapshot: config, customEvents: [{ id: 'scheduled-1', modelIds: ['corolla-e120'], category: 'engine', name: 'Замена цепи', probability5y: 1, repairCost: 10000, coefficient: 1.2, maxCost: 15000, monthStart: 5, monthEnd: 5, mode: 'SCHEDULED', scheduledMonth: 5 }] }), config);
-    expect(result.forecast.months[0].plannedReserve).toBe(2400);
-    expect(result.forecast.months[3].plannedReserve).toBe(2400);
     expect(result.forecast.months[4].scheduledEvents).toBe(12000);
     expect(result.forecast.months[4].expectedRepairs).toBe(0);
-    expect(result.forecast.months[5].plannedReserve).toBe(0);
-    expect(result.forecast.months[4].reserveBalance).toBe(0);
+    expect(result.forecast.months[0].plannedReserve).toBeCloseTo(200, 6);
+    expect(result.forecast.months[5].plannedReserve).toBeCloseTo(0, 6);
+    expect(result.forecast.months[3].reserveBalance).toBeGreaterThan(0);
+    expect(result.forecast.months[4].reserveBalance).toBeLessThan(0);
   });
 
-  it('uses the midpoint of a risk window for the deterministic cash-flow plan', () => {
+  it('reserves for a risk window continuously instead of at a single midpoint month', () => {
     const config = cloneConfig(DEFAULT_CONFIG);
     config.repairEvents = [];
     const result = calculateInspection(inspection({ configSnapshot: config, customEvents: [{ id: 'risk-1', modelIds: ['corolla-e120'], category: 'suspension', name: 'Ступичный подшипник', probability5y: 0.5, repairCost: 10000, coefficient: 1.2, maxCost: 15000, monthStart: 3, monthEnd: 6, mode: 'RISK' }] }), config);
-    expect(result.forecast.months[3].plannedReserve).toBe(1200);
-    expect(result.forecast.months[4].expectedRepairs).toBe(6000);
-    expect(result.forecast.months[5].plannedReserve).toBe(0);
+    const spend = result.forecast.months.map((month) => month.expectedRepairs);
+    expect(spend.slice(0, 2).every((value) => value === 0)).toBe(true);
+    expect(spend.slice(2, 6).every((value) => value > 0)).toBe(true);
+    expect(spend.slice(6).every((value) => value === 0)).toBe(true);
+    expect(result.forecast.months[0].plannedReserve).toBeGreaterThan(0);
+    expect(result.forecast.months[59].plannedReserve).toBeCloseTo(0, 6);
   });
 });
