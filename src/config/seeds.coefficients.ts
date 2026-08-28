@@ -1,0 +1,27 @@
+import type { CoefficientRule } from '../types';
+
+export const COEFFICIENTS: CoefficientRule[] = [
+  { id: 'maintenance', category: 'maintenance', label: 'ТО', coefficient: 1.10 },
+  { id: 'engine-minor', category: 'engine', label: 'Двигатель — мелкий ремонт', coefficient: 1.20 },
+  { id: 'engine-medium', category: 'engine', label: 'Двигатель — средний ремонт', coefficient: 1.20 },
+  { id: 'engine-major', category: 'engine', label: 'Двигатель — крупный ремонт', coefficient: 1.25 },
+  { id: 'engine-diagnostic', category: 'engine', label: 'Двигатель — диагностика', coefficient: 1.20 },
+  { id: 'transmission-service', category: 'transmission', label: 'АКПП — обслуживание', coefficient: 1.10 },
+  { id: 'transmission-repair', category: 'transmission', label: 'АКПП — ремонт', coefficient: 1.25 },
+  { id: 'transmission-diagnostic', category: 'transmission', label: 'АКПП — диагностика', coefficient: 1.10 },
+  { id: 'suspension', category: 'suspension', label: 'Подвеска', coefficient: 1.15 },
+  { id: 'brakes', category: 'brakes', label: 'Тормоза', coefficient: 1.15 },
+  { id: 'steering', category: 'steering', label: 'Рулевое', coefficient: 1.20 },
+  { id: 'cooling', category: 'cooling', label: 'Охлаждение', coefficient: 1.20 },
+  { id: 'ac', category: 'ac', label: 'Кондиционер', coefficient: 1.20 },
+  { id: 'electrics', category: 'electrics', label: 'Электрика', coefficient: 1.25 },
+  { id: 'body-local', category: 'body', label: 'Кузов — локальный ремонт', coefficient: 1.15 },
+  { id: 'body-multiple', category: 'body', label: 'Кузов — несколько элементов', coefficient: 1.20 },
+  { id: 'body-paint', category: 'body', label: 'Кузов — полный окрас', coefficient: 1.20 },
+  { id: 'body-welding', category: 'body', label: 'Кузов — сварка', coefficient: 1.25 },
+  { id: 'body-geometry', category: 'body', label: 'Кузов — геометрия', coefficient: 1.25 },
+  { id: 'tires', category: 'tires', label: 'Резина', coefficient: 1.10 },
+  { id: 'interior', category: 'interior', label: 'Салон', coefficient: 1.10 },
+  { id: 'exhaust', category: 'exhaust', label: 'Выхлоп', coefficient: 1.20 },
+  { id: 'other', category: 'other', label: 'Прочее', coefficient: 1.20 },
+];
