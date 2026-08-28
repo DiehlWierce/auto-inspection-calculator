@@ -1,0 +1,27 @@
+import type { PriceRangeRule } from '../types';
+
+export const PRICE_BOOK: PriceRangeRule[] = [
+  { id: 'maintenance', category: 'maintenance', label: 'ТО', min: 6000, typical: 12000, max: 22000 },
+  { id: 'engine-minor', category: 'engine', label: 'Двигатель — мелкий ремонт', min: 8000, typical: 18000, max: 35000 },
+  { id: 'engine-medium', category: 'engine', label: 'Двигатель — средний ремонт', min: 30000, typical: 55000, max: 95000 },
+  { id: 'engine-major', category: 'engine', label: 'Двигатель — крупный ремонт', min: 70000, typical: 110000, max: 190000 },
+  { id: 'engine-diagnostic', category: 'engine', label: 'Двигатель — диагностика', min: 2000, typical: 4000, max: 8000 },
+  { id: 'transmission-service', category: 'transmission', label: 'АКПП — обслуживание', min: 8000, typical: 15000, max: 26000 },
+  { id: 'transmission-repair', category: 'transmission', label: 'АКПП — ремонт', min: 45000, typical: 75000, max: 140000 },
+  { id: 'transmission-diagnostic', category: 'transmission', label: 'АКПП — диагностика', min: 2000, typical: 4500, max: 9000 },
+  { id: 'suspension', category: 'suspension', label: 'Подвеска', min: 8000, typical: 22000, max: 45000 },
+  { id: 'brakes', category: 'brakes', label: 'Тормоза', min: 7000, typical: 18000, max: 38000 },
+  { id: 'steering', category: 'steering', label: 'Рулевое', min: 6000, typical: 20000, max: 50000 },
+  { id: 'cooling', category: 'cooling', label: 'Охлаждение', min: 5000, typical: 15000, max: 35000 },
+  { id: 'ac', category: 'ac', label: 'Кондиционер', min: 4000, typical: 20000, max: 60000 },
+  { id: 'electrics', category: 'electrics', label: 'Электрика', min: 3000, typical: 15000, max: 45000 },
+  { id: 'body-local', category: 'body', label: 'Кузов — локальный ремонт', min: 8000, typical: 16000, max: 30000 },
+  { id: 'body-multiple', category: 'body', label: 'Кузов — несколько элементов', min: 25000, typical: 50000, max: 95000 },
+  { id: 'body-paint', category: 'body', label: 'Кузов — полный окрас', min: 70000, typical: 110000, max: 180000 },
+  { id: 'body-welding', category: 'body', label: 'Кузов — сварка', min: 15000, typical: 35000, max: 80000 },
+  { id: 'body-geometry', category: 'body', label: 'Кузов — геометрия', min: 20000, typical: 45000, max: 100000 },
+  { id: 'tires', category: 'tires', label: 'Резина', min: 12000, typical: 24000, max: 45000 },
+  { id: 'interior', category: 'interior', label: 'Салон', min: 3000, typical: 10000, max: 28000 },
+  { id: 'exhaust', category: 'exhaust', label: 'Выхлоп', min: 4000, typical: 14000, max: 35000 },
+  { id: 'other', category: 'other', label: 'Прочее', min: 3000, typical: 12000, max: 30000 },
+];

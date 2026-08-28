@@ -1,5 +1,5 @@
 import { DEFAULT_CONFIG, cloneConfig } from '../config';
-import type { AppConfig, InspectionTemplate, RepairEvent } from '../types';
+import type { AppConfig, InspectionTemplate, PriceRangeRule, RepairEvent } from '../types';
 
 export function normalizeConfig(stored: AppConfig | undefined): AppConfig {
   if (!stored) return cloneConfig(DEFAULT_CONFIG);
@@ -27,6 +27,7 @@ export function normalizeConfig(stored: AppConfig | undefined): AppConfig {
       engineVariants: model.engineVariants?.length ? model.engineVariants : [{ id: 'unknown', label: 'Код двигателя не установлен', code: '', timingDrive: 'UNKNOWN', note: 'Уточните код двигателя и тип привода ГРМ.' }],
     }))),
     coefficients: Array.isArray(stored.coefficients) ? stored.coefficients : fallback.coefficients,
+    priceBook: normalizePriceBook(stored.priceBook, fallback.priceBook),
     repairEvents: normalizeRepairEvents(stored.repairEvents, fallback.repairEvents),
     templates: normalizeTemplates(stored.templates, fallback.templates),
   };
@@ -50,4 +51,10 @@ function normalizeRepairEvents(storedEvents: RepairEvent[] | undefined, fallback
   const chainFallback = fallbackEvents.find((event) => event.id === 'corolla-timing-chain');
   const beltFallback = fallbackEvents.find((event) => event.id === 'timing-belt');
   return [...withoutLegacy, ...(chainFallback && !withoutLegacy.some((event) => event.id === chainFallback.id) ? [chainFallback] : []), ...(beltFallback && !withoutLegacy.some((event) => event.id === beltFallback.id) ? [beltFallback] : [])];
+}
+
+function normalizePriceBook(storedRules: PriceRangeRule[] | undefined, fallbackRules: PriceRangeRule[]): PriceRangeRule[] {
+  if (!Array.isArray(storedRules)) return fallbackRules;
+  const merged = fallbackRules.map((rule) => ({ ...rule, ...storedRules.find((item) => item.id === rule.id) }));
+  return [...merged, ...storedRules.filter((rule) => !fallbackRules.some((item) => item.id === rule.id))];
 }

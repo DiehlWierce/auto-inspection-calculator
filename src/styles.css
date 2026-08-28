@@ -528,3 +528,20 @@ input, select, textarea { font-size: 14px; line-height: 1.25; }
 .progress-pill.in_progress { color: #14634a; background: #d9f2e6; }
 .progress-pill.finished_candidate { color: #6b4a00; background: #fdf0cf; }
 .progress-pill.finished_rejected { color: #7a2230; background: #fadfe3; }
+
+.price-hint { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; font-weight: 700; line-height: 1.35; }
+.price-book-note { color: var(--muted); }
+.fact-cost .unknown-cost { color: #a33; }
+
+.price-book-grid { display: grid; gap: 4px; }
+.price-book-header, .price-book-row { display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr)); gap: 10px; align-items: center; }
+.price-book-header { padding-bottom: 6px; color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.price-book-row { padding: 7px 0; border-bottom: 1px solid #edf1f5; }
+.price-book-label { color: #526078; font-size: 12px; font-weight: 800; }
+.price-book-row input { padding: 8px; }
+
+@media (max-width: 650px) {
+  .price-book-header { display: none; }
+  .price-book-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 10px; }
+  .price-book-label { grid-column: 1 / -1; }
+}

@@ -38,7 +38,7 @@ export function adaptTimingElement(layout: InspectionLayout, timingDrive: Timing
   }));
 }
 
-export function stageHasFact(facts: Fact[], stage: InspectionStage, element: string): Fact | undefined {
+export function stageHasFact<T extends Fact>(facts: T[], stage: InspectionStage, element: string): T | undefined {
   return facts.find((fact) => fact.stageId === stage.id && fact.elementId === element)
     ?? facts.find((fact) => fact.group === stage.label && fact.description.startsWith(`${element}:`));
 }

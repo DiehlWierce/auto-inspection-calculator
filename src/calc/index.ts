@@ -6,8 +6,8 @@ import type { CalculationResult, CategoryId, Inspection } from '../types';
 
 export function calculateInspection(inspection: Inspection, config = inspection.configSnapshot): CalculationResult {
   const budget = calculateBudget(inspection, config);
-  const forecast = calculateForecast(inspection, config, budget.safeRestoreCost, budget.fullUncertaintyPremium);
-  const rating = ratingFor(config, budget.safeRestoreCost, budget.restoreBudget, budget.remainingBudget, budget.statedRestoreCost, forecast, budget.criticalBodyRisks, budget.unknownCostCount, inspection.pricing.askingPrice, inspection.vehicle);
+  const forecast = calculateForecast(inspection, config, budget.calculatedFacts, budget.safeRestoreCost, budget.fullUncertaintyPremium);
+  const rating = ratingFor(config, budget.safeRestoreCost, budget.restoreBudget, budget.remainingBudget, budget.statedRestoreCost, forecast, budget.criticalBodyRisks, budget.unknownCostCount, budget.estimatedFactsCount, inspection.pricing.askingPrice, inspection.vehicle);
   return { ...budget, forecast, rating };
 }
 

@@ -7,6 +7,7 @@ import { modelName } from '../../domain/vehicle';
 import { BudgetSettings } from './BudgetSettings';
 import { CoefficientSettings } from './CoefficientSettings';
 import { ModelSettingsCard } from './ModelSettingsCard';
+import { PriceBookSettings } from './PriceBookSettings';
 import { RatingSettings } from './RatingSettings';
 import { ScenarioSettings } from './ScenarioSettings';
 import { TemplateEditorPanel } from './TemplateEditorPanel';
@@ -43,6 +44,7 @@ export function SettingsView({ config, active, onUpdate, onApplyActive }: { conf
     <div className="settings-grid"><BudgetSettings config={config} onUpdate={onUpdate} /><ScenarioSettings config={config} onUpdate={onUpdate} /></div>
     <div className="content-card full-width"><div className="section-heading compact-heading"><div><p className="eyebrow">КАТАЛОГ АВТОМОБИЛЕЙ</p><h2>Модели и конфигурации</h2><p className="muted">Базовые три модели можно уточнять; свои модели добавляются в этот же каталог и доступны при старте осмотра.</p></div><button className="primary-button" onClick={addModel}>＋ Добавить модель</button></div><div className="model-settings-groups">{config.models.map((model) => <ModelSettingsCard key={model.id} model={model} config={config} onUpdateModel={updateModel} onUpdateVariant={updateVariant} onAddVariant={addVariant} onRemoveVariant={removeVariant} onAddEvent={addEvent} onUpdateEvent={updateEvent} onRemoveEvent={removeEvent} onRemoveModel={removeModel} />)}</div></div>
     <div className="content-card full-width"><div className="section-heading compact-heading"><div><p className="eyebrow">ШАБЛОНЫ ОСМОТРА</p><h2>Наборы этапов и элементов</h2><p className="muted">Классические шаблоны и варианты под конкретный двигатель уже добавлены. Пользовательские шаблоны можно собрать из любого набора.</p></div><button className="primary-button" onClick={addTemplate}>＋ Создать шаблон</button></div>{editingTemplateId && <TemplateEditorPanel template={config.templates.find((item) => item.id === editingTemplateId) ?? config.templates[0]} config={config} onSave={saveTemplate} onCancel={() => setEditingTemplateId(null)} />}{!editingTemplateId && <div className="template-library">{config.templates.map((template) => <article className="template-card" key={template.id}><div><span className="step-chip">{template.isBuiltIn ? 'БАЗОВЫЙ' : 'МОЙ ШАБЛОН'}</span><h3>{template.name}</h3><p>{template.description}</p><small>{template.modelIds.map((id) => modelName(config, id)).join(' · ')} · {template.layout.length} этапов</small></div><div className="button-row"><button className="ghost-button compact-action" onClick={() => startTemplateEdit(template)}>{template.isBuiltIn ? 'Дублировать и изменить' : 'Изменить'}</button>{!template.isBuiltIn && <button className="action-button danger-action" onClick={() => deleteTemplate(template.id)}>Удалить</button>}</div></article>)}</div>}</div>
+    <PriceBookSettings config={config} onUpdate={onUpdate} />
     <RatingSettings config={config} onUpdate={onUpdate} />
     <CoefficientSettings config={config} onUpdate={onUpdate} />
   </section>;

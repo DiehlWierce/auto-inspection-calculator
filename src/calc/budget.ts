@@ -1,5 +1,5 @@
 import { roundCurrency } from '../utils';
-import { coefficientFor } from './repairTypes';
+import { coefficientFor, resolvePriceRange } from './repairTypes';
 import type { AppConfig, BodyRisk, CalculatedFact, Inspection } from '../types';
 
 export interface BudgetResult {
@@ -22,6 +22,7 @@ export interface BudgetResult {
   calculatedFacts: CalculatedFact[];
   criticalBodyRisks: BodyRisk[];
   unknownCostCount: number;
+  estimatedFactsCount: number;
   questionFactsCount: number;
   confirmedFactsCount: number;
   questionShare: number;
@@ -42,20 +43,24 @@ export function calculateBudget(inspection: Inspection, config: AppConfig): Budg
   const restoreBudget = config.fund - calculationPrice;
   const calculatedFacts: CalculatedFact[] = inspection.facts.map((fact) => {
     const coefficient = coefficientFor(fact, config);
-    return {
-      ...fact,
-      coefficient,
-      safeCost: fact.kind === 'WORK' && fact.statedCost !== undefined ? roundCurrency(fact.statedCost * coefficient) : 0,
-    };
+    if (fact.kind !== 'WORK') return { ...fact, coefficient, estimatedCost: 0, costSource: 'STATED' as const, safeCost: 0 };
+    if (fact.statedCost !== undefined && fact.statedCost > 0) {
+      return { ...fact, coefficient, estimatedCost: fact.statedCost, costSource: 'STATED' as const, safeCost: roundCurrency(fact.statedCost * coefficient) };
+    }
+    const range = resolvePriceRange(fact, config);
+    if (range) {
+      return { ...fact, coefficient, estimatedCost: range.typical, costSource: 'PRICEBOOK' as const, priceRange: { min: range.min, typical: range.typical, max: range.max }, safeCost: range.max };
+    }
+    return { ...fact, coefficient, estimatedCost: 0, costSource: 'UNKNOWN' as const, safeCost: 0 };
   });
   const workFacts = calculatedFacts.filter((fact) => fact.kind === 'WORK');
-  const statedRestoreCost = workFacts.reduce((sum, fact) => sum + (fact.statedCost ?? 0), 0);
+  const statedRestoreCost = workFacts.reduce((sum, fact) => sum + fact.estimatedCost, 0);
   const immediateSafeRestoreCost = workFacts.filter((fact) => fact.urgency === 'NOW').reduce((sum, fact) => sum + fact.safeCost, 0);
   const nearTermSafeRestoreCost = workFacts.filter((fact) => fact.urgency === 'NOW' || fact.urgency === 'SOON').reduce((sum, fact) => sum + fact.safeCost, 0);
   const fullSafeRestoreCost = workFacts.reduce((sum, fact) => sum + fact.safeCost, 0);
   const deferredSafeRestoreCost = fullSafeRestoreCost - immediateSafeRestoreCost;
   const safeRestoreCost = immediateSafeRestoreCost;
-  const uncertaintyPremium = safeRestoreCost - workFacts.filter((fact) => fact.urgency === 'NOW').reduce((sum, fact) => sum + (fact.statedCost ?? 0), 0);
+  const uncertaintyPremium = safeRestoreCost - workFacts.filter((fact) => fact.urgency === 'NOW').reduce((sum, fact) => sum + fact.estimatedCost, 0);
   const fullUncertaintyPremium = fullSafeRestoreCost - statedRestoreCost;
   const remainingBudget = restoreBudget - safeRestoreCost;
   const fullRemainingBudget = restoreBudget - fullSafeRestoreCost;
@@ -69,7 +74,8 @@ export function calculateBudget(inspection: Inspection, config: AppConfig): Budg
         ? 'YELLOW'
         : 'RED';
   const criticalBodyRisks = Array.from(new Set(inspection.facts.flatMap((fact) => fact.bodyRisks)));
-  const unknownCostCount = inspection.facts.filter((fact) => fact.kind === 'WORK' && (!fact.statedCost || fact.statedCost <= 0)).length;
+  const unknownCostCount = workFacts.filter((fact) => fact.costSource === 'UNKNOWN').length;
+  const estimatedFactsCount = workFacts.filter((fact) => fact.costSource === 'PRICEBOOK').length;
   const questionFactsCount = inspection.facts.filter((fact) => fact.status === 'QUESTION').length;
   const confirmedFactsCount = inspection.facts.filter((fact) => fact.status === 'CONFIRMED').length;
   const questionShare = inspection.facts.length > 0 ? questionFactsCount / inspection.facts.length : 0;
@@ -94,6 +100,7 @@ export function calculateBudget(inspection: Inspection, config: AppConfig): Budg
     calculatedFacts,
     criticalBodyRisks,
     unknownCostCount,
+    estimatedFactsCount,
     questionFactsCount,
     confirmedFactsCount,
     questionShare,

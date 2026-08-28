@@ -3,6 +3,7 @@ import { DEFAULT_INSPECTION_TEMPLATES } from '../inspectionTemplates';
 import { COEFFICIENTS } from './seeds.coefficients';
 import { MODELS } from './seeds.models';
 import { REPAIR_EVENTS } from './seeds.events';
+import { PRICE_BOOK } from './seeds.priceBook';
 
 export { CATEGORIES } from './seeds.categories';
 
@@ -16,7 +17,7 @@ const years = (value: number) => Array.from({ length: 5 }, () => value);
 
 export const DEFAULT_CONFIG: AppConfig = {
   id: 'current',
-  version: 'seed-2026-08-27',
+  version: 'seed-2026-08-28',
   fund: 500000,
   maxAskingPrice: 465000,
   targetPurchasePrice: 400000,
@@ -55,6 +56,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   },
   models: MODELS,
   coefficients: COEFFICIENTS,
+  priceBook: PRICE_BOOK,
   repairEvents: REPAIR_EVENTS,
   templates: DEFAULT_INSPECTION_TEMPLATES,
 };

@@ -1,8 +1,8 @@
 import { clamp, roundCurrency } from '../../utils';
-import { coefficientFor } from '../repairTypes';
 import { simulateRisks } from './simulate';
 import type {
   AppConfig,
+  CalculatedFact,
   Fact,
   ForecastResult,
   Inspection,
@@ -58,7 +58,7 @@ function deferredMonth(urgency: Fact['urgency']): number | null {
   return null;
 }
 
-export function calculateForecast(inspection: Inspection, config: AppConfig, immediateSafeRestoreCost: number, fullUncertaintyPremium: number): ForecastResult {
+export function calculateForecast(inspection: Inspection, config: AppConfig, calculatedFacts: CalculatedFact[], immediateSafeRestoreCost: number, fullUncertaintyPremium: number): ForecastResult {
   const model = config.models.find((item) => item.id === inspection.vehicle.modelId) ?? config.models[0];
   const scenario = config.scenario;
   const years = scenario.years;
@@ -75,12 +75,11 @@ export function calculateForecast(inspection: Inspection, config: AppConfig, imm
 
   const totalMonths = years * 12;
   const deferredByMonth = Array.from({ length: totalMonths }, () => 0);
-  for (const fact of inspection.facts) {
-    if (fact.kind !== 'WORK' || fact.statedCost === undefined || fact.urgency === 'NOW') continue;
+  for (const fact of calculatedFacts) {
+    if (fact.kind !== 'WORK' || fact.urgency === 'NOW') continue;
     const month = deferredMonth(fact.urgency);
     if (month === null) continue;
-    const coefficient = coefficientFor(fact, config);
-    deferredByMonth[Math.min(totalMonths - 1, month - 1)] += roundCurrency(fact.statedCost * coefficient);
+    deferredByMonth[Math.min(totalMonths - 1, month - 1)] += fact.safeCost;
   }
 
   const deferredByYear = Array.from({ length: years }, (_, yearIndex) => deferredByMonth.slice(yearIndex * 12, yearIndex * 12 + 12).reduce((sum, value) => sum + value, 0));

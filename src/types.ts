@@ -58,6 +58,15 @@ export interface EngineVariant {
   note?: string;
 }
 
+export interface PriceRangeRule {
+  id: string;
+  label: string;
+  category: CategoryId;
+  min: number;
+  typical: number;
+  max: number;
+}
+
 export interface CoefficientRule {
   id: string;
   category: CategoryId;
@@ -125,6 +134,7 @@ export interface AppConfig {
   scenario: ScenarioConfig;
   models: ModelProfile[];
   coefficients: CoefficientRule[];
+  priceBook: PriceRangeRule[];
   repairEvents: RepairEvent[];
   templates: InspectionTemplate[];
 }
@@ -229,8 +239,13 @@ export interface Inspection {
   configSnapshot: AppConfig;
 }
 
+export type CostSource = 'STATED' | 'PRICEBOOK' | 'UNKNOWN';
+
 export interface CalculatedFact extends Fact {
   coefficient: number;
+  estimatedCost: number;
+  costSource: CostSource;
+  priceRange?: { min: number; typical: number; max: number };
   safeCost: number;
 }
 
@@ -333,6 +348,7 @@ export interface CalculationResult {
   calculatedFacts: CalculatedFact[];
   criticalBodyRisks: BodyRisk[];
   unknownCostCount: number;
+  estimatedFactsCount: number;
   questionFactsCount: number;
   confirmedFactsCount: number;
   questionShare: number;

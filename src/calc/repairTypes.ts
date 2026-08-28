@@ -1,4 +1,4 @@
-import type { AppConfig, Fact } from '../types';
+import type { AppConfig, Fact, PriceRangeRule } from '../types';
 
 export function repairTypeId(fact: Pick<Fact, 'category' | 'subcategory' | 'description'>): string {
   const text = `${fact.subcategory} ${fact.description}`.toLowerCase();
@@ -30,4 +30,12 @@ export function coefficientFor(fact: Fact, config: AppConfig): number {
   return config.coefficients.find((item) => item.id === id)?.coefficient
     ?? config.coefficients.find((item) => item.category === fact.category)?.coefficient
     ?? 1.2;
+}
+
+export function resolvePriceRange(fact: Fact, config: AppConfig): PriceRangeRule | null {
+  const id = repairTypeId(fact);
+  const priceBook = config.priceBook ?? [];
+  return priceBook.find((item) => item.id === id)
+    ?? priceBook.find((item) => item.category === fact.category)
+    ?? null;
 }

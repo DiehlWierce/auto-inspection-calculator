@@ -28,6 +28,7 @@ export function ratingFor(
   forecast: ForecastResult,
   criticalBodyRisks: BodyRisk[],
   unknownCostCount: number,
+  estimatedFactsCount: number,
   askingPrice: number,
   vehicle: VehicleInfo,
 ): RatingResult {
@@ -80,6 +81,6 @@ export function ratingFor(
     components,
     hardBlocks,
     warnings,
-    status: hardBlocks.length > 0 ? 'BLOCKED' : forecast.complete && forecast.questionFactsCount === 0 ? 'VALID' : 'PROVISIONAL',
+    status: hardBlocks.length > 0 ? 'BLOCKED' : forecast.complete && forecast.questionFactsCount === 0 && estimatedFactsCount === 0 ? 'VALID' : 'PROVISIONAL',
   };
 }
