@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_CONFIG, cloneConfig } from './config';
-import { calculateInspection } from './calculator';
-import type { Inspection } from './types';
+import { DEFAULT_CONFIG, cloneConfig } from '../config';
+import { calculateInspection } from './index';
+import type { Inspection } from '../types';
 
 function inspection(overrides: Partial<Inspection> = {}): Inspection {
   return {

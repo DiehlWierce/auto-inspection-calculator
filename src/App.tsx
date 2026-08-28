@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ChangeEvent, FormEvent, ReactNode } from 'react';
 import { CATEGORIES, DEFAULT_CONFIG, cloneConfig, modelLabel } from './config';
-import { calculateInspection, categoryName } from './calculator';
+import { calculateInspection, categoryName } from './calc';
 import { CLASSIC_INSPECTION_LAYOUT } from './inspectionTemplates';
 import { loadConfig, saveConfig } from './storage/config';
 import { deleteInspection, loadInspections, saveInspection } from './storage/inspections';
