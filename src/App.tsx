@@ -3,7 +3,9 @@ import type { ChangeEvent, FormEvent, ReactNode } from 'react';
 import { CATEGORIES, DEFAULT_CONFIG, cloneConfig, modelLabel } from './config';
 import { calculateInspection, categoryName } from './calculator';
 import { CLASSIC_INSPECTION_LAYOUT } from './inspectionTemplates';
-import { deleteInspection, loadConfig, loadInspections, normalizeConfig, saveConfig, saveInspection } from './storage';
+import { loadConfig, saveConfig } from './storage/config';
+import { deleteInspection, loadInspections, saveInspection } from './storage/inspections';
+import { normalizeConfig } from './storage/normalize';
 import { downloadText, formatDate, money, numberValue, percent, uid } from './utils';
 import type {
   AppConfig,
