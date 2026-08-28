@@ -12,7 +12,7 @@ export function blankFact(categoryId: CategoryId = 'suspension') {
     category,
     subcategory: category.subcategories[0],
     description: '',
-    statedCost: '',
+    statedCost: null as number | null,
     urgency: 'NOW' as FactUrgency,
     status: 'CONFIRMED' as FactStatus,
     comment: '',
@@ -98,7 +98,7 @@ export function makeCustomEvent(modelId: ModelId): RepairEvent {
 }
 
 export function draftFromFact(fact: Fact | undefined): StageDraft {
-  if (!fact) return { state: 'UNSET', details: '', cost: '', urgency: 'NOW', comment: '' };
-  if (fact.kind === 'WORK') return { state: 'WORK', details: fact.description.split(': ').slice(1).join(': ') || fact.description, cost: fact.statedCost?.toString() ?? '', urgency: fact.urgency, comment: fact.comment };
-  return { state: fact.status === 'QUESTION' ? 'QUESTION' : 'GOOD', details: '', cost: '', urgency: fact.urgency, comment: fact.comment };
+  if (!fact) return { state: 'UNSET', details: '', cost: null, urgency: 'NOW', comment: '' };
+  if (fact.kind === 'WORK') return { state: 'WORK', details: fact.description.split(': ').slice(1).join(': ') || fact.description, cost: fact.statedCost ?? null, urgency: fact.urgency, comment: fact.comment };
+  return { state: fact.status === 'QUESTION' ? 'QUESTION' : 'GOOD', details: '', cost: null, urgency: fact.urgency, comment: fact.comment };
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { money, numberValue } from '../utils';
+import { money } from '../utils';
+import { MoneyInput, NumberInput } from '../ui/NumberInput';
 import { INSPECTION_STAGES } from '../domain/layout';
 import { ACCIDENT_OUTCOME_LABELS, DOCUMENT_LABELS } from '../domain/labels';
 import { makeInspection } from '../domain/factory';
@@ -15,13 +16,13 @@ export function NewInspectionView({ config, onCancel, onCreate }: { config: AppC
   const [mileage, setMileage] = useState(240000);
   const [asking, setAsking] = useState(390000);
   const [discount, setDiscount] = useState(20000);
-  const [actual, setActual] = useState('');
+  const [actual, setActual] = useState<number | null>(null);
   const [vin, setVin] = useState('');
   const [plate, setPlate] = useState('');
   const [url, setUrl] = useState('');
   const [source, setSource] = useState('Avito');
   const [documentsStatus, setDocumentsStatus] = useState<NonNullable<VehicleInfo['documentsStatus']>>('UNKNOWN');
-  const [keyCount, setKeyCount] = useState('');
+  const [keyCount, setKeyCount] = useState<number | null>(null);
   const [accidentStatus, setAccidentStatus] = useState<NonNullable<VehicleInfo['accidentStatus']>>('UNKNOWN');
   const [accidentOutcomes, setAccidentOutcomes] = useState<string[]>([]);
   const [accidentComment, setAccidentComment] = useState('');
@@ -40,7 +41,7 @@ export function NewInspectionView({ config, onCancel, onCreate }: { config: AppC
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    onCreate(makeInspection(config, { modelId, engineVariantId, year, mileage, askingPrice: asking, expectedDiscount: discount, actualPurchasePrice: actual ? numberValue(actual) : undefined, vin, plate, listingUrl: url, listingSource: source, documentsStatus, keyCount: keyCount === '' ? undefined : numberValue(keyCount), accidentStatus, accidentOutcomes, accidentComment, templateId: selectedTemplate?.id, inspectionLayout: selectedTemplate?.layout ?? INSPECTION_STAGES }));
+    onCreate(makeInspection(config, { modelId, engineVariantId, year, mileage, askingPrice: asking, expectedDiscount: discount, actualPurchasePrice: actual ?? undefined, vin, plate, listingUrl: url, listingSource: source, documentsStatus, keyCount: keyCount ?? undefined, accidentStatus, accidentOutcomes, accidentComment, templateId: selectedTemplate?.id, inspectionLayout: selectedTemplate?.layout ?? INSPECTION_STAGES }));
   };
 
   return <section className="page-section narrow-page">
@@ -48,16 +49,16 @@ export function NewInspectionView({ config, onCancel, onCreate }: { config: AppC
     <form className="form-card" onSubmit={submit}>
       <FormSection title="Автомобиль">
         <div className="model-picker">{config.models.map((model) => <button type="button" key={model.id} className={`model-option ${model.id === modelId ? 'selected' : ''}`} onClick={() => changeModel(model.id)}><span className="model-radio"></span><span><strong>{modelName(config, model.id)}</strong><small>{model.engine} · {model.transmission} · демо-расход {model.consumptionLPer100Km} л/100 км</small></span></button>)}</div>
-        <div className="form-grid four"><Field label="Год"><input type="number" min="1980" max="2030" value={year} onChange={(event) => setYear(numberValue(event.target.value))} /></Field><Field label="Пробег, км"><input type="number" min="0" value={mileage} onChange={(event) => setMileage(numberValue(event.target.value))} /></Field><Field label="Источник"><input value={source} onChange={(event) => setSource(event.target.value)} placeholder="Avito" /></Field><Field label="Двигатель и ГРМ"><select value={engineVariantId} onChange={(event) => setEngineVariantId(event.target.value)}>{selectedModel.engineVariants.map((variant) => <option key={variant.id} value={variant.id}>{variant.label}</option>)}</select></Field></div>
+        <div className="form-grid four"><Field label="Год"><NumberInput min={1980} max={2030} step={1} value={year} onCommit={(value) => setYear(value ?? 0)} /></Field><Field label="Пробег, км"><NumberInput min={0} step={1000} value={mileage} onCommit={(value) => setMileage(value ?? 0)} /></Field><Field label="Источник"><input value={source} onChange={(event) => setSource(event.target.value)} placeholder="Avito" /></Field><Field label="Двигатель и ГРМ"><select value={engineVariantId} onChange={(event) => setEngineVariantId(event.target.value)}>{selectedModel.engineVariants.map((variant) => <option key={variant.id} value={variant.id}>{variant.label}</option>)}</select></Field></div>
         {selectedVariant?.note && <p className="field-note">{selectedVariant.note}</p>}
       </FormSection>
       <FormSection title="Шаблон осмотра">
         {availableTemplates.length > 0 ? <><Field label="Набор этапов и элементов"><select value={selectedTemplate?.id ?? ''} onChange={(event) => setTemplateId(event.target.value)}>{availableTemplates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}</select></Field><p className="field-note">{selectedTemplate?.description} Можно изменить структуру уже внутри осмотра.</p></> : <p className="field-note">Для этой модели пока нет сохранённого шаблона. Будет использован классический набор этапов, который можно настроить вручную.</p>}
       </FormSection>
       <FormSection title="Цена и объявление">
-        <div className="form-grid three"><Field label="Цена объявления, ₽" hint={`Фильтр: ${money(config.maxAskingPrice)}`}><input type="number" min="0" value={asking} onChange={(event) => setAsking(numberValue(event.target.value))} required /></Field><Field label="Ожидаемый торг, ₽"><input type="number" min="0" value={discount} onChange={(event) => setDiscount(numberValue(event.target.value))} /></Field><Field label="Фактическая цена, ₽" hint="Необязательно"><input type="number" min="0" value={actual} onChange={(event) => setActual(event.target.value)} placeholder="Пока неизвестна" /></Field></div>
+        <div className="form-grid three"><Field label="Цена объявления, ₽" hint={`Фильтр: ${money(config.maxAskingPrice)}`}><MoneyInput value={asking} onCommit={(value) => setAsking(value ?? 0)} required /></Field><Field label="Ожидаемый торг, ₽"><MoneyInput value={discount} onCommit={(value) => setDiscount(value ?? 0)} /></Field><Field label="Фактическая цена, ₽" hint="Необязательно"><MoneyInput allowEmpty value={actual} onCommit={setActual} placeholder="Пока неизвестна" /></Field></div>
         <div className="form-grid two"><Field label="VIN"><input value={vin} onChange={(event) => setVin(event.target.value)} /></Field><Field label="Госномер"><input value={plate} onChange={(event) => setPlate(event.target.value)} /></Field></div><Field label="Ссылка на объявление"><input type="url" value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://…" /></Field>
-        <div className="form-grid three"><Field label="Документы"><select value={documentsStatus} onChange={(event) => setDocumentsStatus(event.target.value as NonNullable<VehicleInfo['documentsStatus']>)}>{Object.entries(DOCUMENT_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field><Field label="Количество ключей"><input type="number" min="0" max="5" value={keyCount} onChange={(event) => setKeyCount(event.target.value)} placeholder="Неизвестно" /></Field><Field label="История ДТП"><select value={accidentStatus} onChange={(event) => setAccidentStatus(event.target.value as NonNullable<VehicleInfo['accidentStatus']>)}><option value="NO">Не было</option><option value="YES">Было</option><option value="UNKNOWN">Неизвестно</option></select></Field></div>
+        <div className="form-grid three"><Field label="Документы"><select value={documentsStatus} onChange={(event) => setDocumentsStatus(event.target.value as NonNullable<VehicleInfo['documentsStatus']>)}>{Object.entries(DOCUMENT_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field><Field label="Количество ключей"><NumberInput allowEmpty min={0} max={5} step={1} value={keyCount} onCommit={setKeyCount} placeholder="Неизвестно" /></Field><Field label="История ДТП"><select value={accidentStatus} onChange={(event) => setAccidentStatus(event.target.value as NonNullable<VehicleInfo['accidentStatus']>)}><option value="NO">Не было</option><option value="YES">Было</option><option value="UNKNOWN">Неизвестно</option></select></Field></div>
         {accidentStatus === 'YES' && <><div className="risk-picker"><span className="field-label">Результаты ДТП</span><div className="check-grid">{Object.entries(ACCIDENT_OUTCOME_LABELS).map(([outcome, label]) => <label key={outcome} className="check-item"><input type="checkbox" checked={accidentOutcomes.includes(outcome)} onChange={() => toggleOutcome(outcome)} />{label}</label>)}</div></div><Field label="Комментарий по ДТП"><textarea rows={2} value={accidentComment} onChange={(event) => setAccidentComment(event.target.value)} /></Field></>}
       </FormSection>
       <div className="form-actions"><button type="button" className="ghost-button" onClick={onCancel}>Назад</button><button type="submit" className="primary-button">Начать осмотр →</button></div>

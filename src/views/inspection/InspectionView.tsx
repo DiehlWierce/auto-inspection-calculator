@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { CATEGORIES } from '../../config';
-import { numberValue, uid } from '../../utils';
+import { uid } from '../../utils';
 import { blankFact } from '../../domain/factory';
 import { INSPECTION_STAGES, adaptTimingElement } from '../../domain/layout';
 import type { InspectionStageId } from '../../domain/layout';
@@ -39,10 +39,10 @@ export function InspectionView({ inspection, result, onUpdate, onNavigate }: { i
   const saveFact = (event: FormEvent) => {
     event.preventDefault();
     if (!form.description.trim()) return;
-    if (form.kind === 'WORK' && numberValue(form.statedCost) <= 0) return;
+    if (form.kind === 'WORK' && form.statedCost !== null && form.statedCost < 0) return;
     const now = new Date().toISOString();
     const previous = editingId ? inspection.facts.find((item) => item.id === editingId) : undefined;
-    const fact: Fact = { id: editingId ?? uid(), sequence: previous?.sequence ?? Math.max(0, ...inspection.facts.map((item) => item.sequence)) + 1, kind: form.kind, category: form.category.id, subcategory: form.subcategory, description: form.description.trim(), statedCost: form.kind === 'WORK' ? numberValue(form.statedCost) : undefined, urgency: form.urgency, status: form.status, comment: form.comment.trim(), bodyRisks: form.bodyRisks, group: form.group.trim() || undefined, createdAt: previous?.createdAt ?? now, updatedAt: now };
+    const fact: Fact = { id: editingId ?? uid(), sequence: previous?.sequence ?? Math.max(0, ...inspection.facts.map((item) => item.sequence)) + 1, kind: form.kind, category: form.category.id, subcategory: form.subcategory, description: form.description.trim(), statedCost: form.kind === 'WORK' ? form.statedCost ?? undefined : undefined, urgency: form.urgency, status: form.status, comment: form.comment.trim(), bodyRisks: form.bodyRisks, group: form.group.trim() || undefined, createdAt: previous?.createdAt ?? now, updatedAt: now };
     upsertFact(fact);
     resetForm();
     setShowFreeForm(true);
@@ -52,7 +52,7 @@ export function InspectionView({ inspection, result, onUpdate, onNavigate }: { i
     const stage = stages.find((item) => item.categories.includes(fact.category));
     if (stage) setActiveStageId(stage.id);
     setEditingId(duplicate ? null : fact.id);
-    setForm({ kind: fact.kind, category, subcategory: fact.subcategory, description: fact.description, statedCost: fact.statedCost?.toString() ?? '', urgency: fact.urgency, status: fact.status, comment: duplicate ? '' : fact.comment, group: fact.group ?? '', bodyRisks: fact.bodyRisks });
+    setForm({ kind: fact.kind, category, subcategory: fact.subcategory, description: fact.description, statedCost: fact.statedCost ?? null, urgency: fact.urgency, status: fact.status, comment: duplicate ? '' : fact.comment, group: fact.group ?? '', bodyRisks: fact.bodyRisks });
     setShowFreeForm(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };

@@ -3,9 +3,11 @@ export const money = (value: number | null | undefined): string => {
   return `${Math.round(value).toLocaleString('ru-RU')} ₽`;
 };
 
-export const numberValue = (value: string): number => {
-  const parsed = Number(value.replace(/\s/g, '').replace(',', '.'));
-  return Number.isFinite(parsed) ? parsed : 0;
+export const parseNumber = (value: string): number | null => {
+  const text = value.replace(/\s/g, '').replace(',', '.');
+  if (text === '' || text === '-' || text === '.' || text === '-.') return null;
+  const parsed = Number(text);
+  return Number.isFinite(parsed) ? parsed : null;
 };
 
 export const percent = (value: number | null | undefined, digits = 1): string => {

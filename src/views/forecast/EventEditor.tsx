@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { CATEGORIES } from '../../config';
-import { numberValue } from '../../utils';
+import { MoneyInput, NumberInput } from '../../ui/NumberInput';
 import { Field } from '../../ui/primitives';
 import type { CategoryId, RepairEvent } from '../../types';
 
@@ -28,13 +28,13 @@ export function EventEditor({ event, allowMode, onCancel, onSave }: { event: Rep
     </div>
     <div className="form-grid four">
       <Field label="Тип"><select disabled={!allowMode} value={mode} onChange={(input) => setMode(input.target.value as 'RISK' | 'SCHEDULED')}><option value="RISK">Вероятностное</option><option value="SCHEDULED">Известный срок</option></select></Field>
-      {mode === 'RISK' ? <Field label="Вероятность, %"><input type="number" min="0" max="100" value={probability} onChange={(input) => setProbability(numberValue(input.target.value))} /></Field> : <Field label="Через сколько месяцев"><input type="number" min="1" max="60" value={monthStart} onChange={(input) => setMonthStart(numberValue(input.target.value))} /></Field>}
-      <Field label="Стоимость, ₽"><input type="number" min="0" value={cost} onChange={(input) => setCost(numberValue(input.target.value))} /></Field>
-      <Field label="Коэффициент K"><input type="number" min="0" step="0.01" value={coefficient} onChange={(input) => setCoefficient(numberValue(input.target.value))} /></Field>
+      {mode === 'RISK' ? <Field label="Вероятность, %"><NumberInput min={0} max={100} value={probability} onCommit={(value) => setProbability(value ?? 0)} /></Field> : <Field label="Через сколько месяцев"><NumberInput min={1} max={60} value={monthStart} onCommit={(value) => setMonthStart(value ?? 0)} /></Field>}
+      <Field label="Стоимость, ₽"><MoneyInput value={cost} onCommit={(value) => setCost(value ?? 0)} /></Field>
+      <Field label="Коэффициент K"><NumberInput min={0} step="0.01" value={coefficient} onCommit={(value) => setCoefficient(value ?? 0)} /></Field>
     </div>
     <div className="form-grid three">
-      <Field label="Максимальная стоимость, ₽"><input type="number" min="0" value={maxCost} onChange={(input) => setMaxCost(numberValue(input.target.value))} /></Field>
-      {mode === 'RISK' && <><Field label="Начало окна, мес."><input type="number" min="1" max="60" value={monthStart} onChange={(input) => setMonthStart(numberValue(input.target.value))} /></Field><Field label="Конец окна, мес."><input type="number" min="1" max="60" value={monthEnd} onChange={(input) => setMonthEnd(numberValue(input.target.value))} /></Field></>}
+      <Field label="Максимальная стоимость, ₽"><MoneyInput value={maxCost} onCommit={(value) => setMaxCost(value ?? 0)} /></Field>
+      {mode === 'RISK' && <><Field label="Начало окна, мес."><NumberInput min={1} max={60} value={monthStart} onCommit={(value) => setMonthStart(value ?? 0)} /></Field><Field label="Конец окна, мес."><NumberInput min={1} max={60} value={monthEnd} onCommit={(value) => setMonthEnd(value ?? 0)} /></Field></>}
     </div>
     <div className="form-actions"><button type="button" className="ghost-button" onClick={onCancel}>Отмена</button><button type="submit" className="primary-button">Сохранить событие</button></div>
   </form>;

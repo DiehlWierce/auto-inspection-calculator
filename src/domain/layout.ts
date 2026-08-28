@@ -12,7 +12,7 @@ export type InspectionStage = InspectionStageConfig;
 export interface StageDraft {
   state: StageElementState;
   details: string;
-  cost: string;
+  cost: number | null;
   urgency: FactUrgency;
   comment: string;
 }
