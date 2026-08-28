@@ -14,7 +14,7 @@ import { calculateInspection } from '../calc';
 import type { CalculationResult, Inspection, View } from '../types';
 
 function App() {
-  const { config, inspections, loading, updateInspection, createInspection, removeInspection, updateConfig, exportBackup, importBackup } = useAppData();
+  const { config, inspections, loading, loadError, backupTask, updateInspection, createInspection, removeInspection, updateConfig, exportBackup, importBackup } = useAppData();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [view, setView] = useState<View>('history');
   const results = useCalculation(inspections);
@@ -59,12 +59,13 @@ function App() {
           <span><strong>Автоосмотр</strong><small>детерминированный калькулятор</small></span>
         </div>
         <div className="topbar-actions">
-          <label className="ghost-button compact">Импорт<input type="file" accept="application/json" onChange={importBackup} hidden /></label>
-          <button className="ghost-button compact" onClick={exportBackup}>Экспорт</button>
+          <label className={`ghost-button compact ${backupTask ? 'disabled' : ''}`}>{backupTask === 'import' ? 'Импорт…' : 'Импорт'}<input type="file" accept="application/json" onChange={(event) => void importBackup(event)} disabled={backupTask !== null} hidden /></label>
+          <button className="ghost-button compact" onClick={exportBackup} disabled={backupTask !== null}>{backupTask === 'export' ? 'Экспорт…' : 'Экспорт'}</button>
         </div>
       </header>
 
       <main className="main-content">
+        {loadError && <div className="summary-note warning-note">Не удалось прочитать локальное хранилище: {loadError}. Показана конфигурация по умолчанию — не сохраняйте изменения, пока проблема не устранена.</div>}
         {view === 'history' && <HistoryView inspections={inspections} results={results} config={config} onOpen={(id) => { setActiveId(id); setView('inspection'); }} onNew={() => setView('new')} onDelete={deleteInspection} onResume={resumeInspection} />}
         {view === 'new' && <NewInspectionView config={config} onCancel={() => setView('history')} onCreate={openInspection} />}
         {view === 'inspection' && active && <ActiveInspection inspection={active} results={results} view={view} onUpdate={updateInspection} onApplyConfig={applyCurrentConfigToActive} onNavigate={setView} />}

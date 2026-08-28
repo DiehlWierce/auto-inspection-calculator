@@ -553,3 +553,10 @@ input, select, textarea { font-size: 14px; line-height: 1.25; }
 
 .wear-heading { margin-top: 18px; }
 .wear-heading h3 { margin: 0; color: var(--navy); font-size: 15px; }
+
+.crash-screen { min-height: 100vh; display: grid; align-content: center; justify-items: start; gap: 14px; padding: 32px; max-width: 720px; margin: 0 auto; }
+.crash-screen h1 { font-size: 22px; margin: 0; }
+.crash-screen p { margin: 0; color: var(--muted); }
+.crash-screen pre { width: 100%; margin: 0; padding: 12px; border-radius: 12px; background: var(--yellow-soft); color: #835e12; white-space: pre-wrap; word-break: break-word; font-size: 13px; }
+.crash-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.ghost-button.disabled, .ghost-button:disabled { opacity: .55; pointer-events: none; }
