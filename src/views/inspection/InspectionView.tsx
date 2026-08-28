@@ -62,6 +62,8 @@ export function InspectionView({ inspection, result, onUpdate, onNavigate }: { i
   };
   const toggleStatus = (fact: Fact) => onUpdate({ ...inspection, facts: inspection.facts.map((item) => item.id === fact.id ? { ...item, status: item.status === 'CONFIRMED' ? 'QUESTION' : 'CONFIRMED', updatedAt: new Date().toISOString() } : item) });
   const finish = (status: 'FINISHED_CANDIDATE' | 'FINISHED_REJECTED') => { onUpdate({ ...inspection, status }); onNavigate('history'); };
+  const resume = () => onUpdate({ ...inspection, status: 'IN_PROGRESS' });
+  const switchDecision = () => onUpdate({ ...inspection, status: inspection.status === 'FINISHED_REJECTED' ? 'FINISHED_CANDIDATE' : 'FINISHED_REJECTED' });
 
   return <section className="page-section inspection-page">
     <div className="inspection-heading"><div><button className="back-link" onClick={() => onNavigate('history')}>← Все осмотры</button><h1>{modelName(inspection.configSnapshot, inspection.vehicle.modelId)}</h1><p className="vehicle-meta">{inspection.vehicle.year} · {engineVariant(inspection.configSnapshot, inspection.vehicle)?.code || 'двигатель не указан'} · {inspection.vehicle.mileage.toLocaleString('ru-RU')} км · {inspection.vehicle.listingSource || 'Источник не указан'}{inspection.vehicle.vin ? ` · VIN ${inspection.vehicle.vin}` : ''}</p></div><div className="heading-actions"><button className="ghost-button" onClick={() => setShowVehicleEditor((value) => !value)}>Данные авто</button><button className="ghost-button" onClick={() => onNavigate('forecast')}>Прогноз 5 лет</button><button className="ghost-button" onClick={() => onNavigate('settings')}>Настройки</button></div></div>
@@ -77,6 +79,11 @@ export function InspectionView({ inspection, result, onUpdate, onNavigate }: { i
     <FactGroupSummary facts={inspection.facts} />
     {showFreeForm && <FactForm form={form} editing={Boolean(editingId)} onChange={setForm} onCategoryChange={changeCategory} onToggleRisk={toggleRisk} onCancel={resetForm} onSubmit={saveFact} />}
     <div className="fact-list">{result.calculatedFacts.length === 0 ? <div className="subtle-empty">Выберите этап и сохраняйте состояние каждого элемента. Для нестандартного замечания используйте свободный факт.</div> : result.calculatedFacts.map((fact) => <FactCard key={fact.id} fact={fact} onEdit={() => editFact(fact)} onDuplicate={() => editFact(fact, true)} onDelete={() => deleteFact(fact.id)} onToggleStatus={() => toggleStatus(fact)} />)}</div>
-    <div className="finish-bar"><div><strong>{inspection.status === 'IN_PROGRESS' ? 'Осмотр в процессе' : inspection.status === 'FINISHED_REJECTED' ? 'Осмотр завершён отказом' : 'Осмотр завершён: кандидат'}</strong><span className="muted">Решение сохранится, форма закроется, и откроется список осмотров.</span></div><div className="button-row"><button className="ghost-button" onClick={() => finish('FINISHED_REJECTED')}>Завершить — отказ</button><button className="primary-button" onClick={() => finish('FINISHED_CANDIDATE')}>Завершить — кандидат</button></div></div>
+    <div className="finish-bar">
+      <div><strong>{inspection.status === 'IN_PROGRESS' ? 'Осмотр в процессе' : inspection.status === 'FINISHED_REJECTED' ? 'Осмотр завершён отказом' : 'Осмотр завершён: кандидат'}</strong><span className="muted">{inspection.status === 'IN_PROGRESS' ? 'Решение сохранится, форма закроется, и откроется список осмотров.' : 'Осмотр можно вернуть в работу и продолжить добавлять факты.'}</span></div>
+      {inspection.status === 'IN_PROGRESS'
+        ? <div className="button-row"><button className="ghost-button" onClick={() => finish('FINISHED_REJECTED')}>Завершить — отказ</button><button className="primary-button" onClick={() => finish('FINISHED_CANDIDATE')}>Завершить — кандидат</button></div>
+        : <div className="button-row"><button className="ghost-button" onClick={switchDecision}>{inspection.status === 'FINISHED_REJECTED' ? 'Сменить решение — кандидат' : 'Сменить решение — отказ'}</button><button className="primary-button" onClick={resume}>Продолжить осмотр</button></div>}
+    </div>
   </section>;
 }

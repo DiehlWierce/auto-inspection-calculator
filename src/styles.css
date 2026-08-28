@@ -521,3 +521,10 @@ input, select, textarea { font-size: 14px; line-height: 1.25; }
 .number-input { display: flex; align-items: center; gap: 6px; }
 .number-input input { min-width: 0; }
 .number-input small { color: var(--muted); font-size: 11px; font-weight: 800; }
+
+.inspection-group { margin-bottom: 22px; }
+.inspection-group-title { display: flex; align-items: center; gap: 9px; margin: 0 0 12px; color: var(--navy); font-size: 15px; }
+.progress-pill { padding: 3px 9px; color: #526078; background: #eef2f7; border-radius: 999px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+.progress-pill.in_progress { color: #14634a; background: #d9f2e6; }
+.progress-pill.finished_candidate { color: #6b4a00; background: #fdf0cf; }
+.progress-pill.finished_rejected { color: #7a2230; background: #fadfe3; }

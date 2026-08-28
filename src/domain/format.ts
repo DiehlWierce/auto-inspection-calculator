@@ -1,4 +1,5 @@
 export { formatDate, money, percent } from '../utils';
+import type { InspectionStatus } from '../types';
 
 export function statusText(status: string): string {
   if (status === 'VALID') return 'Расчёт полный';
@@ -11,4 +12,10 @@ export function zoneText(zone: string): string {
   if (zone === 'YELLOW') return 'Жёлтая зона';
   if (zone === 'FILTER_FAIL') return 'Фильтр не пройден';
   return 'Красная зона';
+}
+
+export function inspectionStatusText(status: InspectionStatus): string {
+  if (status === 'FINISHED_CANDIDATE') return 'Кандидат';
+  if (status === 'FINISHED_REJECTED') return 'Отказ';
+  return 'В работе';
 }

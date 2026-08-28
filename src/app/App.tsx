@@ -34,6 +34,14 @@ function App() {
     }
   };
 
+  const resumeInspection = (id: string) => {
+    const inspection = inspections.find((item) => item.id === id);
+    if (!inspection) return;
+    updateInspection({ ...inspection, status: 'IN_PROGRESS' });
+    setActiveId(id);
+    setView('inspection');
+  };
+
   const applyCurrentConfigToActive = () => {
     if (!active || !config) return;
     updateInspection({ ...active, configSnapshot: cloneConfig(config) });
@@ -57,7 +65,7 @@ function App() {
       </header>
 
       <main className="main-content">
-        {view === 'history' && <HistoryView inspections={inspections} results={results} config={config} onOpen={(id) => { setActiveId(id); setView('inspection'); }} onNew={() => setView('new')} onDelete={deleteInspection} />}
+        {view === 'history' && <HistoryView inspections={inspections} results={results} config={config} onOpen={(id) => { setActiveId(id); setView('inspection'); }} onNew={() => setView('new')} onDelete={deleteInspection} onResume={resumeInspection} />}
         {view === 'new' && <NewInspectionView config={config} onCancel={() => setView('history')} onCreate={openInspection} />}
         {view === 'inspection' && active && activeResult && <InspectionView inspection={active} result={activeResult} onUpdate={updateInspection} onNavigate={setView} />}
         {view === 'forecast' && active && activeResult && <ForecastView inspection={active} result={activeResult} onUpdate={updateInspection} onApplyConfig={applyCurrentConfigToActive} onBack={() => setView('inspection')} />}
