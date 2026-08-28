@@ -165,7 +165,7 @@ input::placeholder, textarea::placeholder { color: #a3afbd; }
 .element-heading strong, .element-heading span { display: block; }
 .element-heading strong { color: var(--navy); font-size: 13px; }
 .element-heading span { margin-top: 4px; color: var(--teal); font-size: 10px; font-weight: 700; }
-.element-fields { display: grid; grid-template-columns: minmax(140px, .7fr) minmax(160px, 1.4fr) 125px 160px; gap: 7px; }
+.element-fields { display: grid; grid-template-columns: minmax(140px, .7fr) minmax(160px, 1.4fr) minmax(120px, 160px); gap: 9px 7px; }
 .element-fields input, .element-fields select { min-width: 0; padding: 9px 10px; font-size: 12px; }
 .element-actions { display: flex; gap: 8px; align-items: center; white-space: nowrap; }
 .primary-button.compact { padding: 9px 11px; font-size: 11px; }
@@ -529,7 +529,6 @@ input, select, textarea { font-size: 14px; line-height: 1.25; }
 .progress-pill.finished_candidate { color: #6b4a00; background: #fdf0cf; }
 .progress-pill.finished_rejected { color: #7a2230; background: #fadfe3; }
 
-.price-hint { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; font-weight: 700; line-height: 1.35; }
 .price-book-note { color: var(--muted); }
 .fact-cost .unknown-cost { color: #a33; }
 
@@ -560,3 +559,23 @@ input, select, textarea { font-size: 14px; line-height: 1.25; }
 .crash-screen pre { width: 100%; margin: 0; padding: 12px; border-radius: 12px; background: var(--yellow-soft); color: #835e12; white-space: pre-wrap; word-break: break-word; font-size: 13px; }
 .crash-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .ghost-button.disabled, .ghost-button:disabled { opacity: .55; pointer-events: none; }
+
+/* Поле стоимости: справочная вилка как действие, а не как текст. */
+.cost-field { display: grid; gap: 7px; min-width: 0; }
+.cost-field .field-label { margin-bottom: 0; }
+.cost-field .number-input { width: 100%; }
+.cost-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.cost-chip { padding: 5px 10px; color: #526078; background: #eef2f7; border: 1px solid transparent; border-radius: 999px; font-size: 11px; font-weight: 800; line-height: 1.1; transition: .16s ease; }
+.cost-chip:hover { color: var(--navy); background: #e2eaf4; }
+.cost-chip.active { color: #0f6d5f; background: var(--teal-soft); border-color: var(--teal); }
+.cost-scale { position: relative; height: 4px; margin: 4px 3px 2px; background: #e7edf4; border-radius: 999px; }
+.cost-scale-marker { position: absolute; top: 50%; width: 11px; height: 11px; background: var(--teal); border: 2px solid white; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 0 1px rgba(22, 162, 142, .4); }
+.cost-scale-marker.above, .cost-scale-marker.below { background: var(--yellow); box-shadow: 0 0 0 1px rgba(191, 134, 17, .4); }
+.cost-note { color: var(--muted); font-size: 11px; font-weight: 700; line-height: 1.35; }
+.cost-note.attention { color: #835e12; }
+.cost-missing { display: grid; gap: 6px; justify-items: start; padding: 9px 11px; color: #835e12; background: var(--yellow-soft); border-radius: 9px; font-size: 11px; font-weight: 700; line-height: 1.35; }
+.cost-missing .text-button { font-size: 11px; }
+.cost-field.compact { gap: 5px; }
+.cost-field.compact .cost-chip { padding: 4px 8px; font-size: 10px; }
+.cost-field.compact .cost-note, .cost-field.compact .cost-missing { font-size: 10px; }
+.element-fields .cost-field { grid-column: 1 / -1; }

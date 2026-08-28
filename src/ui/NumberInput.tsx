@@ -13,11 +13,14 @@ interface NumberInputProps {
   disabled?: boolean;
   autoFocus?: boolean;
   suffix?: string;
+  format?: boolean;
 }
 
-export function NumberInput({ value, onCommit, allowEmpty = false, suffix, ...input }: NumberInputProps) {
+export function NumberInput({ value, onCommit, allowEmpty = false, suffix, format = false, min, max, step, ...input }: NumberInputProps) {
   const [draft, setDraft] = useState<string | null>(null);
-  const text = draft ?? (value === null || value === undefined ? '' : String(value));
+  const [focused, setFocused] = useState(false);
+  const raw = value === null || value === undefined ? '' : String(value);
+  const text = draft ?? (format && !focused && raw !== '' ? Number(raw).toLocaleString('ru-RU') : raw);
   const change = (next: string) => {
     setDraft(next);
     if (next.trim() === '') {
@@ -30,8 +33,9 @@ export function NumberInput({ value, onCommit, allowEmpty = false, suffix, ...in
   const blur = () => {
     if (draft !== null && draft.trim() === '') onCommit(allowEmpty ? null : 0);
     setDraft(null);
+    setFocused(false);
   };
-  const field = <input type="number" inputMode="decimal" {...input} value={text} onChange={(event) => change(event.target.value)} onBlur={blur} />;
+  const field = <input type={format ? 'text' : 'number'} inputMode="decimal" {...input} {...(format ? {} : { min, max, step })} value={text} onFocus={() => setFocused(true)} onChange={(event) => change(event.target.value)} onBlur={blur} />;
   return suffix ? <span className="number-input">{field}<small>{suffix}</small></span> : field;
 }
 
