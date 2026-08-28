@@ -45,6 +45,8 @@ export interface ModelProfile {
   engine: string;
   transmission: string;
   engineVariants: EngineVariant[];
+  /** Поправка на стоимость запчастей относительно базового справочника. Работа не масштабируется. */
+  partsFactor?: number;
   consumptionLPer100Km: number;
   taxAnnual: number;
   repairEventIds: string[];
@@ -58,6 +60,12 @@ export interface EngineVariant {
   note?: string;
 }
 
+export interface CostSpread {
+  min: number;
+  typical: number;
+  max: number;
+}
+
 export interface PriceRangeRule {
   id: string;
   label: string;
@@ -65,6 +73,16 @@ export interface PriceRangeRule {
   min: number;
   typical: number;
   max: number;
+  /** Стоимость запчастей и материалов без работы. Основа, из которой выведены min/typical/max. */
+  parts?: CostSpread;
+  /** Нормо-часы на работу. Умножаются на ставку сервиса из конфигурации. */
+  laborHours?: CostSpread;
+  /** Что входит в работу: сторона, комплектность, оговорки. */
+  scope?: string;
+  /** Ключевые слова элемента осмотра и описания факта для подбора работы. */
+  match?: string[];
+  /** Общая вилка категории — берётся, когда конкретная работа не опознана. */
+  fallback?: boolean;
 }
 
 export interface CoefficientRule {
@@ -146,6 +164,7 @@ export interface AppConfig {
   scenario: ScenarioConfig;
   models: ModelProfile[];
   coefficients: CoefficientRule[];
+  laborRate: CostSpread;
   priceBook: PriceRangeRule[];
   repairEvents: RepairEvent[];
   templates: InspectionTemplate[];

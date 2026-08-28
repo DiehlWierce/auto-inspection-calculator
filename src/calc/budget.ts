@@ -47,7 +47,7 @@ export function calculateBudget(inspection: Inspection, config: AppConfig): Budg
     if (fact.statedCost !== undefined && fact.statedCost > 0) {
       return { ...fact, coefficient, estimatedCost: fact.statedCost, costSource: 'STATED' as const, safeCost: roundCurrency(fact.statedCost * coefficient) };
     }
-    const range = resolvePriceRange(fact, config);
+    const range = resolvePriceRange(fact, config, inspection.vehicle.modelId);
     if (range) {
       return { ...fact, coefficient, estimatedCost: range.typical, costSource: 'PRICEBOOK' as const, priceRange: { min: range.min, typical: range.typical, max: range.max }, safeCost: range.max };
     }

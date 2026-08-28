@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG, cloneConfig } from '../config';
 import { calculateInspection } from './index';
+import { resolvePriceRange } from './repairTypes';
 import type { Fact, Inspection } from '../types';
 
 function workFact(overrides: Partial<Fact> = {}): Fact {
@@ -9,6 +10,11 @@ function workFact(overrides: Partial<Fact> = {}): Fact {
     description: 'Стойки и опоры', urgency: 'NOW', status: 'CONFIRMED', comment: '', bodyRisks: [],
     createdAt: '', updatedAt: '', ...overrides,
   };
+}
+
+/** Та же вилка, что подставит расчёт: работа подбирается по описанию факта и модели. */
+function expectedRange(overrides: Partial<Fact> = {}) {
+  return resolvePriceRange(workFact(overrides), DEFAULT_CONFIG, 'corolla-e120')!;
 }
 
 function inspection(facts: Fact[], config = cloneConfig(DEFAULT_CONFIG)): Inspection {
@@ -33,7 +39,8 @@ describe('cost source branches', () => {
   it('substitutes the price book range when the cost is empty', () => {
     const result = calculateInspection(inspection([workFact()]));
     const fact = result.calculatedFacts[0];
-    const range = DEFAULT_CONFIG.priceBook.find((rule) => rule.id === 'suspension')!;
+    const range = expectedRange();
+    expect(range.id).toBe('suspension-front-struts');
     expect(fact.costSource).toBe('PRICEBOOK');
     expect(fact.estimatedCost).toBe(range.typical);
     expect(fact.safeCost).toBe(range.max);
@@ -63,7 +70,7 @@ describe('cost source branches', () => {
   });
 
   it('aggregates the budget from estimatedCost and safeCost', () => {
-    const range = DEFAULT_CONFIG.priceBook.find((rule) => rule.id === 'suspension')!;
+    const range = expectedRange();
     const result = calculateInspection(inspection([
       workFact({ id: 'a', statedCost: 20000 }),
       workFact({ id: 'b', sequence: 2, urgency: 'SOON' }),
@@ -76,7 +83,7 @@ describe('cost source branches', () => {
   });
 
   it('carries a price-book deferred fact into the forecast', () => {
-    const range = DEFAULT_CONFIG.priceBook.find((rule) => rule.id === 'suspension')!;
+    const range = expectedRange({ urgency: 'SOON' });
     const result = calculateInspection(inspection([workFact({ urgency: 'SOON' })]));
     expect(result.forecast.months[2].deferredFacts).toBe(range.max);
     expect(result.forecast.years[0].deferredFacts).toBe(range.max);

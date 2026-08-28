@@ -21,6 +21,7 @@ export function ModelSettingsCard({ model, config, onUpdateModel, onUpdateVarian
       <Field label="Коробка"><input value={model.transmission} onChange={(event) => onUpdateModel(model.id, { transmission: event.target.value })} placeholder="AT" /></Field>
       <Field label="Расход, л/100 км"><NumberInput min={0} step="0.1" value={model.consumptionLPer100Km} onCommit={(value) => onUpdateModel(model.id, { consumptionLPer100Km: value ?? 0 })} /></Field>
       <Field label="Налог, ₽/год"><MoneyInput step={100} value={model.taxAnnual} onCommit={(value) => onUpdateModel(model.id, { taxAnnual: value ?? 0 })} /></Field>
+      <Field label="Коэффициент запчастей" hint="1,0 — базовый справочник. Дороже оригинал — больше, дешёвый аналоговый рынок — меньше"><NumberInput min={0.3} step="0.01" value={model.partsFactor ?? 1} onCommit={(value) => onUpdateModel(model.id, { partsFactor: value ?? 1 })} /></Field>
     </div>
     <div className="engine-variant-list">
       <div className="section-heading compact-heading"><strong>Варианты двигателя и ГРМ</strong><button className="ghost-button compact-action" onClick={() => onAddVariant(model.id)}>＋ Добавить вариант</button></div>

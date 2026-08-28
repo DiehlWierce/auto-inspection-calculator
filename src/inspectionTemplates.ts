@@ -9,9 +9,10 @@ export const CLASSIC_INSPECTION_LAYOUT: InspectionLayout = [
     { id: 'interior-trim', label: 'Отделка', category: 'interior', subcategory: 'Обивка', elements: ['Сиденья', 'Потолок', 'Дверные карты', 'Торпедо и пластик', 'Ковры и обивка пола', 'Багажник'] },
     { id: 'interior-equipment', label: 'Оборудование', category: 'interior', subcategory: 'Пластик', elements: ['Ремни безопасности', 'Подушки безопасности', 'Стеклоподъёмники', 'Центральный замок', 'Приборная панель'] },
   ] },
-  { id: 'engine', label: 'Двигатель', description: 'Запуск, работа, течи и обслуживание двигателя.', categories: ['engine'], blocks: [
-    { id: 'engine-operation', label: 'Работа двигателя', category: 'engine', subcategory: 'Диагностика', elements: ['Холодный запуск', 'Холостой ход', 'Разгон и тяга', 'Посторонние звуки', 'Дым из выхлопа', 'Течи масла'] },
-    { id: 'engine-maintenance', label: 'Регламент', category: 'engine', subcategory: 'Мелкий ремонт', elements: ['Ремень ГРМ и ролики', 'Свечи и катушки', 'Навесное оборудование', 'Компрессия'] },
+  { id: 'engine', label: 'Двигатель и охлаждение', description: 'Запуск, работа, течи, навесное оборудование и система охлаждения.', categories: ['engine', 'cooling'], blocks: [
+    { id: 'engine-operation', label: 'Работа двигателя', category: 'engine', subcategory: 'Диагностика', elements: ['Холодный запуск', 'Холостой ход', 'Разгон и тяга', 'Посторонние звуки', 'Дым из выхлопа', 'Течи масла', 'Компрессия'] },
+    { id: 'engine-mechanics', label: 'Навесное и опоры', category: 'engine', subcategory: 'Мелкий ремонт', elements: ['Навесное оборудование', 'Опоры двигателя', 'Форсунки и топливная система'] },
+    { id: 'engine-cooling', label: 'Охлаждение', category: 'cooling', subcategory: 'Радиатор', elements: ['Радиатор', 'Патрубки', 'Термостат', 'Помпа', 'Вентилятор охлаждения'] },
   ] },
   { id: 'transmission', label: 'АКПП', description: 'Переключения, пробуксовки, удары и течи.', categories: ['transmission'], blocks: [
     { id: 'transmission-check', label: 'Проверка в движении', category: 'transmission', subcategory: 'Диагностика', elements: ['Включение D и R', 'Переключения', 'Пробуксовка', 'Удары и задержки', 'Кикдаун', 'Течи и состояние масла'] },
@@ -25,9 +26,10 @@ export const CLASSIC_INSPECTION_LAYOUT: InspectionLayout = [
     { id: 'electrics-main', label: 'Электрика', category: 'electrics', subcategory: 'Диагностика', elements: ['Аккумулятор', 'Генератор', 'Стартер', 'Освещение', 'Ошибки на панели', 'Проводка'] },
     { id: 'electrics-comfort', label: 'Комфорт и климат', category: 'ac', subcategory: 'Диагностика', elements: ['Кондиционер', 'Печка', 'Вентилятор', 'Обогревы и зеркала'] },
   ] },
-  { id: 'service', label: 'ТО и жидкости', description: 'Расходники, охлаждение и обязательное обслуживание.', categories: ['maintenance', 'cooling'], blocks: [
-    { id: 'service-fluids', label: 'Жидкости и регламент', category: 'maintenance', subcategory: 'Масла и фильтры', elements: ['Масло двигателя', 'Фильтры', 'Антифриз', 'Тормозная жидкость', 'Масло АКПП'] },
-    { id: 'service-cooling', label: 'Охлаждение', category: 'cooling', subcategory: 'Радиатор', elements: ['Радиатор', 'Патрубки', 'Термостат', 'Помпа'] },
+  { id: 'service', label: 'ТО и регламент', description: 'Что по регламенту уже закрыто, а что придётся оплатить сразу после покупки.', categories: ['maintenance'], blocks: [
+    { id: 'service-oil', label: 'Масло и фильтры', category: 'maintenance', subcategory: 'Масла и фильтры', elements: ['Масло двигателя и масляный фильтр', 'Воздушный фильтр', 'Салонный фильтр', 'Топливный фильтр'] },
+    { id: 'service-fluids', label: 'Жидкости', category: 'maintenance', subcategory: 'Жидкости', elements: ['Антифриз', 'Тормозная жидкость', 'Масло АКПП', 'Жидкость ГУР'] },
+    { id: 'service-scheduled', label: 'Регламентные работы', category: 'maintenance', subcategory: 'Регламентные работы', elements: ['ГРМ: уточнить тип и состояние', 'Ремень навесного и ролики', 'Свечи зажигания', 'История обслуживания'] },
   ] },
   { id: 'wheels', label: 'Колёса и выхлоп', description: 'Резина, диски и выхлопная система.', categories: ['tires', 'exhaust', 'other'], blocks: [
     { id: 'wheels-tires', label: 'Колёса', category: 'tires', subcategory: 'Летняя', elements: ['Летняя резина', 'Зимняя резина', 'Диски', 'Запасное колесо'] },

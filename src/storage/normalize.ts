@@ -28,6 +28,7 @@ export function normalizeConfig(stored: AppConfig | undefined): AppConfig {
       engineVariants: model.engineVariants?.length ? model.engineVariants : [{ id: 'unknown', label: 'Код двигателя не установлен', code: '', timingDrive: 'UNKNOWN', note: 'Уточните код двигателя и тип привода ГРМ.' }],
     }))),
     coefficients: Array.isArray(stored.coefficients) ? stored.coefficients : fallback.coefficients,
+    laborRate: { ...fallback.laborRate, ...stored.laborRate },
     priceBook: normalizePriceBook(stored.priceBook, fallback.priceBook),
     repairEvents: normalizeRepairEvents(stored.repairEvents, fallback.repairEvents),
     templates: normalizeTemplates(stored.templates, fallback.templates),
@@ -66,8 +67,20 @@ function normalizeRepairEvents(storedEvents: RepairEvent[] | undefined, fallback
   return [...withoutLegacy, ...(chainFallback && !withoutLegacy.some((event) => event.id === chainFallback.id) ? [chainFallback] : []), ...(beltFallback && !withoutLegacy.some((event) => event.id === beltFallback.id) ? [beltFallback] : [])];
 }
 
+/**
+ * До версии seed-2026-08-29 справочник состоял из вилок уровня категории без разбора на
+ * запчасти и нормо-часы. Такие суммы не переносим: они бы перекрыли новый расчёт своими
+ * старыми числами. Собственные правила пользователя сохраняем в любом случае.
+ */
+function isLegacyPriceBook(storedRules: PriceRangeRule[], fallbackRules: PriceRangeRule[]): boolean {
+  const known = storedRules.filter((rule) => fallbackRules.some((item) => item.id === rule.id));
+  return known.length > 0 && known.every((rule) => rule.parts === undefined);
+}
+
 function normalizePriceBook(storedRules: PriceRangeRule[] | undefined, fallbackRules: PriceRangeRule[]): PriceRangeRule[] {
   if (!Array.isArray(storedRules)) return fallbackRules;
+  const custom = storedRules.filter((rule) => !fallbackRules.some((item) => item.id === rule.id));
+  if (isLegacyPriceBook(storedRules, fallbackRules)) return [...fallbackRules, ...custom];
   const merged = fallbackRules.map((rule) => ({ ...rule, ...storedRules.find((item) => item.id === rule.id) }));
-  return [...merged, ...storedRules.filter((rule) => !fallbackRules.some((item) => item.id === rule.id))];
+  return [...merged, ...custom];
 }

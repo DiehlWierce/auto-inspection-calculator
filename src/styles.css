@@ -532,6 +532,18 @@ input, select, textarea { font-size: 14px; line-height: 1.25; }
 .price-book-note { color: var(--muted); }
 .fact-cost .unknown-cost { color: #a33; }
 
+.labor-rate-card { display: grid; gap: 10px; margin-bottom: 14px; padding: 12px 14px; background: #f4f7fa; border: 1px solid #e4eaf1; border-radius: 11px; }
+.labor-rate-intro { display: grid; gap: 3px; }
+.labor-rate-intro strong { color: var(--navy); font-size: 12px; font-weight: 800; }
+.labor-rate-intro .muted { font-size: 11px; line-height: 1.4; }
+.labor-rate-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.labor-rate-fields label { display: grid; gap: 4px; color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+.labor-rate-card .ghost-button { justify-self: start; }
+.price-book-group { margin-bottom: 16px; }
+.price-book-group-title { margin-bottom: 6px; color: var(--navy); font-size: 12px; font-weight: 800; }
+.price-book-label small { display: block; color: var(--muted); font-size: 10px; font-weight: 700; line-height: 1.35; }
+.price-book-scope { font-style: italic; }
+.price-book-footnote { font-size: 11px; line-height: 1.45; }
 .price-book-grid { display: grid; gap: 4px; }
 .price-book-header, .price-book-row { display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr)); gap: 10px; align-items: center; }
 .price-book-header { padding-bottom: 6px; color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
@@ -542,6 +554,7 @@ input, select, textarea { font-size: 14px; line-height: 1.25; }
 @media (max-width: 650px) {
   .price-book-header { display: none; }
   .price-book-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 10px; }
+  .labor-rate-fields { grid-template-columns: 1fr; }
   .price-book-label { grid-column: 1 / -1; }
 }
 
@@ -571,11 +584,16 @@ input, select, textarea { font-size: 14px; line-height: 1.25; }
 .cost-scale { position: relative; height: 4px; margin: 4px 3px 2px; background: #e7edf4; border-radius: 999px; }
 .cost-scale-marker { position: absolute; top: 50%; width: 11px; height: 11px; background: var(--teal); border: 2px solid white; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 0 1px rgba(22, 162, 142, .4); }
 .cost-scale-marker.above, .cost-scale-marker.below { background: var(--yellow); box-shadow: 0 0 0 1px rgba(191, 134, 17, .4); }
+.cost-basis { display: grid; gap: 2px; padding: 7px 9px; color: #526078; background: #f4f7fa; border-radius: 8px; font-size: 11px; font-weight: 700; line-height: 1.35; }
+.cost-basis strong { color: var(--navy); font-size: 11px; font-weight: 800; }
+.cost-basis-scope { color: var(--muted); font-weight: 700; }
 .cost-note { color: var(--muted); font-size: 11px; font-weight: 700; line-height: 1.35; }
 .cost-note.attention { color: #835e12; }
 .cost-missing { display: grid; gap: 6px; justify-items: start; padding: 9px 11px; color: #835e12; background: var(--yellow-soft); border-radius: 9px; font-size: 11px; font-weight: 700; line-height: 1.35; }
 .cost-missing .text-button { font-size: 11px; }
 .cost-field.compact { gap: 5px; }
 .cost-field.compact .cost-chip { padding: 4px 8px; font-size: 10px; }
-.cost-field.compact .cost-note, .cost-field.compact .cost-missing { font-size: 10px; }
+.cost-field.compact .cost-note, .cost-field.compact .cost-missing, .cost-field.compact .cost-basis { font-size: 10px; }
+.cost-field.compact .cost-basis { padding: 6px 8px; }
+.cost-field.compact .cost-basis strong { font-size: 10px; }
 .element-fields .cost-field { grid-column: 1 / -1; }
